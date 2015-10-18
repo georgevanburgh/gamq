@@ -1,8 +1,9 @@
 package encoders
+
 import (
-	"fmt"
-	"bytes"
 	"bufio"
+	"bytes"
+	"fmt"
 	"strings"
 )
 
@@ -23,32 +24,34 @@ func (t TestEncoder) Encode(m Message) string {
 	}
 	buffer.WriteString("BODY\n")
 
-	buffer.Write(m.Body)
+	buffer.WriteString(m.Body)
 
 	return buffer.String()
 }
 
 func (t TestEncoder) Decode(s string) Message {
-	scanner := bufio.NewScanner(s)
-	var toReturn Message
+	scanner := bufio.NewScanner(bytes.NewBufferString(s))
+	var toReturn Message = Message{}
+	toReturn.Headers = make(map[string]string)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "BODY" {
 			break
 		}
-		if line {
+		if line != "" {
 			parts := strings.SplitN(line, ":", 2)
 			toReturn.Headers[parts[0]] = parts[1]
 		}
 	}
 
-	toReturn.Body = scanner.Text()
+	scanner.Scan()
+	toReturn.Body += scanner.Text()
 
 	return toReturn
 }
 
 type Message struct {
-	Body string
+	Body    string
 	Headers map[string]string
 }

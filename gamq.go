@@ -1,15 +1,25 @@
 package main
+
 import (
-	"github.com/FireEater64/gamq/encoders"
 	"fmt"
+
+	"github.com/FireEater64/gamq/encoders"
 )
 
 func main() {
 	encoder := encoders.TestEncoder{}
-	encodedMessage := encoder.Encode(encoders.Message{Body: "abc", Headers: 123 })
+
+	messageToEncode := encoders.Message{Body: "abc", Headers: make(map[string]string)}
+	messageToEncode.Headers["Foo"] = "Bar"
+
+	encodedMessage := encoder.Encode(messageToEncode)
 
 	fmt.Println(encodedMessage)
 
 	decodedMessage := encoder.Decode(encodedMessage)
+
+	for key, value := range decodedMessage.Headers {
+		fmt.Printf("%s: %s\n", key, value)
+	}
 	fmt.Println(decodedMessage.Body)
 }
