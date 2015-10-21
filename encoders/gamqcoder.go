@@ -20,7 +20,7 @@ func (t TestEncoder) Encode(m Message) string {
 	var buffer bytes.Buffer
 
 	for index, element := range m.Headers {
-		buffer.WriteString(fmt.Sprintf("%s: %s\n", index, element))
+		buffer.WriteString(fmt.Sprintf("%s:%s\n", index, element))
 	}
 	buffer.WriteString("BODY\n")
 
