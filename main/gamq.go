@@ -7,5 +7,4 @@ import (
 func main() {
 	reader := gamq.TcpReader{}
 	reader.Initialize()
-	reader.Completed.Wait()
 }

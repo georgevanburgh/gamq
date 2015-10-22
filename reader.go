@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"sync"
 )
 
 const (
@@ -16,7 +15,6 @@ type Reader interface {
 }
 
 type TcpReader struct {
-	Completed sync.WaitGroup
 }
 
 func (reader TcpReader) Initialize() {
@@ -35,14 +33,19 @@ func (reader TcpReader) Initialize() {
 		}
 
 		channel := make(chan string)
-		reader.Completed.Add(1)
-		go handleConnection(channel, &conn, &reader)
+		go listenForMessages(channel)
+		go handleConnection(channel, &conn)
 	}
 }
 
-func handleConnection(out chan string, conn *net.Conn, reader *TcpReader) {
-	defer close(out)
-	defer reader.Completed.Done()
+func listenForMessages(in chan string) {
+	for {
+		stringToPrint := <-in
+		fmt.Print(stringToPrint)
+	}
+}
+
+func handleConnection(out chan string, conn *net.Conn) {
 
 	bufferedReader := bufio.NewReader(*conn)
 
@@ -53,6 +56,7 @@ func handleConnection(out chan string, conn *net.Conn, reader *TcpReader) {
 			// Connection has been closed
 			return
 		}
-		fmt.Println(line)
+		stringLine := string(line[:len(line)])
+		out <- stringLine
 	}
 }
