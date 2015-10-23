@@ -3,6 +3,7 @@ package gamq
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -65,7 +66,7 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 	fmt.Println("Connection closed")
 }
 
-func (manager *ConnectionManager) parseClientCommand(command string, writer *bufio.Writer) string {
+func (manager *ConnectionManager) parseClientCommand(command string, writer io.Writer) string {
 	commandTokens := strings.Fields(command)
 	switch strings.ToUpper(commandTokens[0]) {
 	case "HELP":
@@ -73,7 +74,7 @@ func (manager *ConnectionManager) parseClientCommand(command string, writer *buf
 	case "PUB":
 		manager.qm.Publish(commandTokens[1], strings.Join(commandTokens[2:], " "))
 	case "SUB":
-		manager.qm.Subscribe(commandTokens[1], writer)
+		manager.qm.Subscribe(commandTokens[1], &writer)
 	default:
 		return UNRECOGNISEDCOMMANDTEXT
 	}
