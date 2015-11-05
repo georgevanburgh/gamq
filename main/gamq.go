@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/FireEater64/gamq"
 )
 
@@ -9,6 +11,8 @@ func main() {
 	// Closing this channel will kill all pipeline goroutines
 	//done := make(chan struct{})
 	//defer close(done)
+
+	fmt.Println("Broker started.")
 
 	connectionManager := gamq.ConnectionManager{}
 	connectionManager.Initialize()

@@ -3,10 +3,12 @@ package gamq
 import (
 	"bufio"
 	"fmt"
-	"io"
+	"math/rand"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -16,11 +18,19 @@ const (
 )
 
 type ConnectionManager struct {
-	wg sync.WaitGroup
-	qm QueueManager
+	wg   sync.WaitGroup
+	qm   QueueManager
+	rand *rand.Rand
 }
 
 func (manager *ConnectionManager) Initialize() {
+	// Initialize our random number generator (used for naming new connections)
+	// A different seed will be used on each startup, for no good reason
+	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	manager.qm = QueueManager{}
+	manager.qm.Initialize()
+
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", TCPPORT))
 
 	if err != nil {
@@ -43,9 +53,12 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 	defer manager.wg.Done()
 	connReader := bufio.NewReader(*conn)
 	connWriter := bufio.NewWriter(*conn)
+	client := Client{Name: strconv.Itoa(manager.rand.Int()),
+		Writer: connWriter,
+		Reader: connReader}
 
 	for {
-		line, err := connReader.ReadBytes('\n')
+		line, err := client.Reader.ReadBytes('\n')
 
 		if err != nil {
 			// Connection has been closed
@@ -56,25 +69,30 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 		fmt.Print(stringLine)
 
 		// Parse command and (optionally) return response (if any)
-		response := manager.parseClientCommand(stringLine, connWriter)
+		response := manager.parseClientCommand(stringLine, &client)
 		if response != "" {
-			connWriter.WriteString(response)
-			connWriter.Flush()
+			client.Writer.WriteString(response)
+			client.Writer.Flush()
 		}
 	}
 
 	fmt.Println("Connection closed")
 }
 
-func (manager *ConnectionManager) parseClientCommand(command string, writer io.Writer) string {
+func (manager *ConnectionManager) parseClientCommand(command string, client *Client) string {
 	commandTokens := strings.Fields(command)
+
+	if len(commandTokens) == 0 {
+		return ""
+	}
+
 	switch strings.ToUpper(commandTokens[0]) {
 	case "HELP":
 		return HELPSTRING
 	case "PUB":
 		manager.qm.Publish(commandTokens[1], strings.Join(commandTokens[2:], " "))
 	case "SUB":
-		manager.qm.Subscribe(commandTokens[1], &writer)
+		manager.qm.Subscribe(commandTokens[1], client)
 	default:
 		return UNRECOGNISEDCOMMANDTEXT
 	}
