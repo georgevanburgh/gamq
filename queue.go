@@ -23,6 +23,7 @@ func (q *Queue) RemoveSubscriber(givenSubscriber *Client) {
 func (q *Queue) PublishMessage(givenMessage string) {
 	// Write the message to each subscriber (currently no queuing takes place)
 	for _, subscriber := range q.subscribers {
+		_ = "breakpoint"
 		subscriber.Writer.WriteString(givenMessage)
 		subscriber.Writer.Flush()
 	}

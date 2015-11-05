@@ -69,33 +69,29 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 		fmt.Print(stringLine)
 
 		// Parse command and (optionally) return response (if any)
-		response := manager.parseClientCommand(stringLine, &client)
-		if response != "" {
-			client.Writer.WriteString(response)
-			client.Writer.Flush()
-		}
+		manager.parseClientCommand(stringLine, &client)
 	}
 
 	fmt.Println("Connection closed")
 }
 
-func (manager *ConnectionManager) parseClientCommand(command string, client *Client) string {
+func (manager *ConnectionManager) parseClientCommand(command string, client *Client) {
 	commandTokens := strings.Fields(command)
 
 	if len(commandTokens) == 0 {
-		return ""
+		return
 	}
 
 	switch strings.ToUpper(commandTokens[0]) {
 	case "HELP":
-		return HELPSTRING
+		client.Writer.WriteString(HELPSTRING)
+		client.Writer.Flush()
 	case "PUB":
 		manager.qm.Publish(commandTokens[1], strings.Join(commandTokens[2:], " "))
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)
 	default:
-		return UNRECOGNISEDCOMMANDTEXT
+		client.Writer.WriteString(UNRECOGNISEDCOMMANDTEXT)
+		client.Writer.Flush()
 	}
-
-	return ""
 }

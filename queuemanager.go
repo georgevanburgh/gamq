@@ -5,11 +5,11 @@ import (
 )
 
 type QueueManager struct {
-	queues map[string]Queue
+	queues map[string]*Queue
 }
 
 func (qm *QueueManager) Initialize() {
-	qm.queues = make(map[string]Queue)
+	qm.queues = make(map[string]*Queue)
 	fmt.Println("Initialized")
 }
 
@@ -32,12 +32,13 @@ func (qm *QueueManager) Subscribe(queueName string, client *Client) {
 	queueToSubscribeTo.AddSubscriber(client)
 }
 
-func (qm *QueueManager) getQueueSafely(queueName string) Queue {
+func (qm *QueueManager) getQueueSafely(queueName string) *Queue {
+	_ = "breakpoint"
 	queueToReturn, present := qm.queues[queueName]
 	if !present {
 		newQueue := Queue{Name: queueName}
 		newQueue.Initialize()
-		qm.queues[queueName] = newQueue
+		qm.queues[queueName] = &newQueue
 		queueToReturn = qm.queues[queueName]
 	}
 
