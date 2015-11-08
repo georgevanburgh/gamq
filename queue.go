@@ -4,27 +4,26 @@ import ()
 
 type Queue struct {
 	Name        string
-	subscribers []*Client
+	Messages    chan<- string
+	Subscribers chan<- *Client
 }
 
 func (q *Queue) Initialize() {
-	q.subscribers = make([]*Client, 0)
+	messages := make(chan string)
+	subscribers := make(chan *Client)
+
+	messageHandler1 := DummyMessageHandler{}
+	messageHandler2 := DummyMessageHandler{}
+	messageHandler3 := DummyMessageHandler{}
+
+	// Hook the flow together
+	messageHandler3.Initialize(messageHandler2.Initialize(messageHandler1.Initialize(messages)))
+
+	q.Messages = messages
+	q.Subscribers = subscribers
 }
 
-func (q *Queue) AddSubscriber(givenSubscriber *Client) {
-	_ = "breakpoint"
-	q.subscribers = append(q.subscribers, givenSubscriber)
-	_ = "breakpoint"
-}
-
-func (q *Queue) RemoveSubscriber(givenSubscriber *Client) {
-}
-
-func (q *Queue) PublishMessage(givenMessage string) {
-	// Write the message to each subscriber (currently no queuing takes place)
-	for _, subscriber := range q.subscribers {
-		_ = "breakpoint"
-		subscriber.Writer.WriteString(givenMessage)
-		subscriber.Writer.Flush()
-	}
+func (q *Queue) Close() {
+	close(q.Messages)
+	close(q.Subscribers)
 }

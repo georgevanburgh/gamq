@@ -19,7 +19,7 @@ func (qm *QueueManager) Publish(queueName string, message string) {
 	_ = "breakpoint"
 
 	queueToPublishTo := qm.getQueueSafely(queueName)
-	queueToPublishTo.PublishMessage(message)
+	queueToPublishTo.Messages <- message
 }
 
 func (qm *QueueManager) Subscribe(queueName string, client *Client) {
@@ -29,7 +29,7 @@ func (qm *QueueManager) Subscribe(queueName string, client *Client) {
 	// var present bool
 
 	queueToSubscribeTo := qm.getQueueSafely(queueName)
-	queueToSubscribeTo.AddSubscriber(client)
+	queueToSubscribeTo.Subscribers <- client
 }
 
 func (qm *QueueManager) getQueueSafely(queueName string) *Queue {
