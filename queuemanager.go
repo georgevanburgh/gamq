@@ -25,9 +25,6 @@ func (qm *QueueManager) Publish(queueName string, message string) {
 func (qm *QueueManager) Subscribe(queueName string, client *Client) {
 	fmt.Printf("Subscribing to %s\n", queueName)
 
-	// var queueToSubscribeTo Queue
-	// var present bool
-
 	queueToSubscribeTo := qm.getQueueSafely(queueName)
 	queueToSubscribeTo.Subscribers <- client
 }

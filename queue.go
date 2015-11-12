@@ -14,10 +14,10 @@ func (q *Queue) Initialize() {
 
 	messageHandler1 := DummyMessageHandler{}
 	messageHandler2 := DummyMessageHandler{}
-	messageHandler3 := DummyMessageHandler{}
+	messageShipper := MessageShipper{}
 
 	// Hook the flow together
-	messageHandler3.Initialize(messageHandler2.Initialize(messageHandler1.Initialize(messages)))
+	messageShipper.Initialize(messageHandler2.Initialize(messageHandler1.Initialize(messages)), subscribers)
 
 	q.Messages = messages
 	q.Subscribers = subscribers
