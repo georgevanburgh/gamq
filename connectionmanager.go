@@ -13,8 +13,8 @@ import (
 
 const (
 	TCPPORT                 = 48879
-	HELPSTRING              = "Help. Me.\n"
-	UNRECOGNISEDCOMMANDTEXT = "Unrecognised command\n"
+	HELPSTRING              = "Help. Me."
+	UNRECOGNISEDCOMMANDTEXT = "Unrecognised command"
 )
 
 type ConnectionManager struct {
@@ -58,7 +58,8 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 		Reader: connReader}
 
 	for {
-		line, err := client.Reader.ReadBytes('\n')
+		// Read until newline
+		line, err := client.Reader.ReadString('\n')
 
 		if err != nil {
 			// Connection has been closed
@@ -84,14 +85,20 @@ func (manager *ConnectionManager) parseClientCommand(command string, client *Cli
 
 	switch strings.ToUpper(commandTokens[0]) {
 	case "HELP":
-		client.Writer.WriteString(HELPSTRING)
-		client.Writer.Flush()
+		manager.sendStringToClient(HELPSTRING, client)
 	case "PUB":
 		manager.qm.Publish(commandTokens[1], strings.Join(commandTokens[2:], " "))
+		manager.sendStringToClient("PUBACK", client)
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)
+	case "PINGREQ":
+		manager.sendStringToClient("PINGRESP", client)
 	default:
-		client.Writer.WriteString(UNRECOGNISEDCOMMANDTEXT)
-		client.Writer.Flush()
+		manager.sendStringToClient(UNRECOGNISEDCOMMANDTEXT, client)
 	}
+}
+
+func (manager *ConnectionManager) sendStringToClient(toSend string, client *Client) {
+	fmt.Fprintln(client.Writer, toSend)
+	client.Writer.Flush()
 }
