@@ -14,7 +14,11 @@ import (
 
 const (
 	UNRECOGNISEDCOMMANDTEXT = "Unrecognised command"
-	HELPSTRING              = "Help. Me."
+	HELPSTRING              = `Available commands:
+	HELP: Prints this text
+	PUB <queue> <message>: Publish <message> to <queue>
+	SUB <queue>: Subscribe to messages on <queue>
+	PINGREQ: Requests a PINGRESP from the server`
 )
 
 type ConnectionManager struct {
