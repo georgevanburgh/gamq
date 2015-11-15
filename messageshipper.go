@@ -1,6 +1,8 @@
 package gamq
 
-import "fmt"
+import (
+	log "github.com/cihub/seelog"
+)
 
 type MessageShipper struct {
 	subscriberChannel chan *Client
@@ -23,7 +25,7 @@ func (shipper *MessageShipper) listenForNewSubscribers() {
 	for {
 		newClient, more := <-shipper.subscriberChannel
 		if more {
-			fmt.Println("New subscriber!")
+			log.Info("New subscriber!")
 			_ = "breakpoint"
 			shipper.subscribers = append(shipper.subscribers, newClient)
 		} else {

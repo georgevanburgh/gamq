@@ -1,6 +1,8 @@
 package gamq
 
-import "fmt"
+import (
+	log "github.com/cihub/seelog"
+)
 
 type DummyMessageHandler struct {
 }
@@ -11,11 +13,11 @@ func (dmh *DummyMessageHandler) Initialize(input chan string) chan string {
 		for {
 			message, more := <-input
 			if more {
-				fmt.Println(message)
+				log.Debugf("%s", message)
 				outputChannel <- message
 			} else {
 				// We're done
-				fmt.Println("Closing output channel")
+				log.Info("Closing output channel")
 				close(outputChannel)
 				return
 			}
