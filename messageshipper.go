@@ -25,7 +25,7 @@ func (shipper *MessageShipper) listenForNewSubscribers() {
 	for {
 		newClient, more := <-shipper.subscriberChannel
 		if more {
-			log.Info("New subscriber!")
+			log.Info("New subscriber!\n")
 			_ = "breakpoint"
 			shipper.subscribers = append(shipper.subscribers, newClient)
 		} else {

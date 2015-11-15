@@ -1,7 +1,6 @@
 package gamq
 
 import (
-	"fmt"
 	log "github.com/cihub/seelog"
 )
 
@@ -11,11 +10,11 @@ type QueueManager struct {
 
 func (qm *QueueManager) Initialize() {
 	qm.queues = make(map[string]*Queue)
-	log.Debug("Initialized QueueManager")
+	log.Debug("Initialized QueueManager\n")
 }
 
 func (qm *QueueManager) Publish(queueName string, message string) {
-	fmt.Printf("Publishing message to %s: %s\n", queueName, message)
+	log.Debugf("Publishing message to %s: %s\n", queueName, message)
 
 	_ = "breakpoint"
 
@@ -24,7 +23,7 @@ func (qm *QueueManager) Publish(queueName string, message string) {
 }
 
 func (qm *QueueManager) Subscribe(queueName string, client *Client) {
-	log.Infof("%s subscribed to %s", client.Name, queueName)
+	log.Infof("%s subscribed to %s\n", client.Name, queueName)
 
 	queueToSubscribeTo := qm.getQueueSafely(queueName)
 	queueToSubscribeTo.Subscribers <- client

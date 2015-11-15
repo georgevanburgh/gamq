@@ -17,7 +17,9 @@ func (q *Queue) Initialize() {
 	messageShipper := MessageShipper{}
 
 	// Hook the flow together
-	messageShipper.Initialize(messageHandler2.Initialize(messageHandler1.Initialize(messages)), subscribers)
+	messageShipper.Initialize(
+		messageHandler2.Initialize(
+			messageHandler1.Initialize(messages)), subscribers)
 
 	q.Messages = messages
 	q.Subscribers = subscribers

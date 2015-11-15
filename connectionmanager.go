@@ -13,9 +13,8 @@ import (
 )
 
 const (
-	TCPPORT                 = 48879
-	HELPSTRING              = "Help. Me."
 	UNRECOGNISEDCOMMANDTEXT = "Unrecognised command"
+	HELPSTRING              = "Help. Me."
 )
 
 type ConnectionManager struct {
@@ -24,7 +23,7 @@ type ConnectionManager struct {
 	rand *rand.Rand
 }
 
-func (manager *ConnectionManager) Initialize() {
+func (manager *ConnectionManager) Initialize(config *Config) {
 	// Initialize our random number generator (used for naming new connections)
 	// A different seed will be used on each startup, for no good reason
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -32,17 +31,17 @@ func (manager *ConnectionManager) Initialize() {
 	manager.qm = QueueManager{}
 	manager.qm.Initialize()
 
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", TCPPORT))
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
 
 	if err != nil {
-		log.Errorf("An error occured whilst opening a socket for reading: %s",
+		log.Errorf("An error occured whilst opening a socket for reading: %s\n",
 			err.Error())
 	}
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Errorf("An error occured whilst opening a socket for reading: %s",
+			log.Errorf("An error occured whilst opening a socket for reading: %s\n",
 				err.Error())
 		}
 		manager.wg.Add(1)
@@ -68,7 +67,7 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 		}
 
 		stringLine := string(line[:len(line)])
-		fmt.Print(stringLine)
+		log.Debugf("A command was received: %s", stringLine)
 
 		// Parse command and (optionally) return response (if any)
 		manager.parseClientCommand(stringLine, &client)

@@ -13,7 +13,7 @@ func (dmh *DummyMessageHandler) Initialize(input chan string) chan string {
 		for {
 			message, more := <-input
 			if more {
-				log.Debugf("%s", message)
+				log.Debugf("%s\n", message)
 				outputChannel <- message
 			} else {
 				// We're done
