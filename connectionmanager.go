@@ -3,6 +3,7 @@ package gamq
 import (
 	"bufio"
 	"fmt"
+	log "github.com/cihub/seelog"
 	"math/rand"
 	"net"
 	"strconv"
@@ -34,14 +35,14 @@ func (manager *ConnectionManager) Initialize() {
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", TCPPORT))
 
 	if err != nil {
-		fmt.Printf("An error occured whilst opening a socket for reading: %s",
+		log.Errorf("An error occured whilst opening a socket for reading: %s",
 			err.Error())
 	}
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			fmt.Printf("An error occured whilst opening a socket for reading: %s",
+			log.Errorf("An error occured whilst opening a socket for reading: %s",
 				err.Error())
 		}
 		manager.wg.Add(1)
@@ -73,7 +74,7 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 		manager.parseClientCommand(stringLine, &client)
 	}
 
-	fmt.Println("Connection closed")
+	log.Info("A connection was closed")
 }
 
 func (manager *ConnectionManager) parseClientCommand(command string, client *Client) {

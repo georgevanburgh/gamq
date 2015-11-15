@@ -2,6 +2,7 @@ package gamq
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 )
 
 type QueueManager struct {
@@ -10,7 +11,7 @@ type QueueManager struct {
 
 func (qm *QueueManager) Initialize() {
 	qm.queues = make(map[string]*Queue)
-	fmt.Println("Initialized")
+	log.Debug("Initialized QueueManager")
 }
 
 func (qm *QueueManager) Publish(queueName string, message string) {
@@ -23,7 +24,7 @@ func (qm *QueueManager) Publish(queueName string, message string) {
 }
 
 func (qm *QueueManager) Subscribe(queueName string, client *Client) {
-	fmt.Printf("Subscribing to %s\n", queueName)
+	log.Infof("%s subscribed to %s", client.Name, queueName)
 
 	queueToSubscribeTo := qm.getQueueSafely(queueName)
 	queueToSubscribeTo.Subscribers <- client

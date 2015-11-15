@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	log "github.com/cihub/seelog"
 
 	"github.com/FireEater64/gamq"
 )
@@ -12,7 +12,7 @@ func main() {
 	//done := make(chan struct{})
 	//defer close(done)
 
-	fmt.Println("Broker started.")
+	log.Info("Broker started.")
 
 	connectionManager := gamq.ConnectionManager{}
 	connectionManager.Initialize()
