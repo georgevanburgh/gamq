@@ -48,6 +48,7 @@ func (manager *ConnectionManager) Initialize(config *Config) {
 			log.Errorf("An error occured whilst opening a socket for reading: %s\n",
 				err.Error())
 		}
+		log.Debug("A new connection was opened.\n")
 		manager.wg.Add(1)
 		go manager.handleConnection(&conn)
 	}
