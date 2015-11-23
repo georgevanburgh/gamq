@@ -1,5 +1,6 @@
 package gamq
 
 type Config struct {
-	Port int
+	Port             int
+	ProfilingEnabled bool
 }

@@ -1,4 +1,4 @@
-<seelog>
+<seelog minlevel="warn" type="asynctimer" asyncinterval="1000">
     <outputs formatid="common">
         <console/>
     </outputs>

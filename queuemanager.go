@@ -14,12 +14,10 @@ func (qm *QueueManager) Initialize() {
 }
 
 func (qm *QueueManager) Publish(queueName string, message string) {
-	log.Debugf("Publishing message to %s: %s\n", queueName, message)
-
-	_ = "breakpoint"
+	// log.Debugf("Publishing message to %s: %s\n", queueName, message)
 
 	queueToPublishTo := qm.getQueueSafely(queueName)
-	queueToPublishTo.Messages <- message
+	queueToPublishTo.Messages <- &message
 }
 
 func (qm *QueueManager) Subscribe(queueName string, client *Client) {
@@ -29,8 +27,14 @@ func (qm *QueueManager) Subscribe(queueName string, client *Client) {
 	queueToSubscribeTo.Subscribers <- client
 }
 
+func (qm *QueueManager) CloseQueue(queueName string) {
+	log.Infof("Closing %s", queueName)
+	queueToClose := qm.getQueueSafely(queueName)
+	delete(qm.queues, queueName)
+	queueToClose.Close()
+}
+
 func (qm *QueueManager) getQueueSafely(queueName string) *Queue {
-	_ = "breakpoint"
 	queueToReturn, present := qm.queues[queueName]
 	if !present {
 		newQueue := Queue{Name: queueName}

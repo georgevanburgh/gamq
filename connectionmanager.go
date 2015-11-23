@@ -71,8 +71,9 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 			break
 		}
 
-		stringLine := string(line[:len(line)])
-		log.Debugf("A command was received: %s", stringLine)
+		stringLine := strings.Split(string(line[:len(line)]), " ")
+		stringLine[0] = strings.ToUpper(stringLine[0])
+		// log.Debugf("A command was received: %s", stringLine)
 
 		// Parse command and (optionally) return response (if any)
 		manager.parseClientCommand(stringLine, &client)
@@ -81,23 +82,24 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 	log.Info("A connection was closed")
 }
 
-func (manager *ConnectionManager) parseClientCommand(command string, client *Client) {
-	commandTokens := strings.Fields(command)
+func (manager *ConnectionManager) parseClientCommand(commandTokens []string, client *Client) {
 
 	if len(commandTokens) == 0 {
 		return
 	}
 
-	switch strings.ToUpper(commandTokens[0]) {
+	switch commandTokens[0] {
 	case "HELP":
 		manager.sendStringToClient(HELPSTRING, client)
 	case "PUB":
 		manager.qm.Publish(commandTokens[1], strings.Join(commandTokens[2:], " "))
-		manager.sendStringToClient("PUBACK", client)
+		// manager.sendStringToClient("PUBACK", client)
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)
 	case "PINGREQ":
 		manager.sendStringToClient("PINGRESP", client)
+	case "CLOSE":
+		manager.qm.CloseQueue(commandTokens[1])
 	default:
 		manager.sendStringToClient(UNRECOGNISEDCOMMANDTEXT, client)
 	}

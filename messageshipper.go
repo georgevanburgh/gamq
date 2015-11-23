@@ -6,11 +6,11 @@ import (
 
 type MessageShipper struct {
 	subscriberChannel chan *Client
-	messageChannel    chan string
+	messageChannel    chan *string
 	subscribers       []*Client
 }
 
-func (shipper *MessageShipper) Initialize(inputChannel chan string, subscriberChannel chan *Client) chan<- string {
+func (shipper *MessageShipper) Initialize(inputChannel chan *string, subscriberChannel chan *Client) chan<- *string {
 	shipper.subscribers = make([]*Client, 0)
 	shipper.subscriberChannel = subscriberChannel
 	shipper.messageChannel = inputChannel
@@ -40,7 +40,10 @@ func (shipper *MessageShipper) forwardMessageToClients() {
 		if more {
 			_ = "breakpoint"
 			for _, subscriber := range shipper.subscribers {
-				subscriber.Writer.WriteString(message)
+				_, err := subscriber.Writer.WriteString(*message)
+				if err != nil {
+					log.Errorf("Error whilst sending message to consumer: %s", err)
+				}
 				subscriber.Writer.Flush()
 			}
 		} else {

@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"runtime"
 
 	"github.com/FireEater64/gamq"
 	log "github.com/cihub/seelog"
+	"github.com/davecheney/profile"
 )
 
 func main() {
@@ -22,7 +24,12 @@ func main() {
 	// Parse the command line flags
 	config := parseCommandLineFlags()
 
+	if config.ProfilingEnabled {
+		defer profile.Start(profile.CPUProfile).Stop()
+	}
+
 	log.Info("Broker started.\n")
+	log.Infof("Executing on %d threads\n", runtime.GOMAXPROCS(-1))
 
 	connectionManager := gamq.ConnectionManager{}
 	connectionManager.Initialize(&config)
@@ -43,6 +50,7 @@ func parseCommandLineFlags() gamq.Config {
 	configToReturn := gamq.Config{}
 
 	flag.IntVar(&configToReturn.Port, "port", 48879, "The port to listen on")
+	flag.BoolVar(&configToReturn.ProfilingEnabled, "profile", false, "Produce a pprof file")
 
 	flag.Parse()
 

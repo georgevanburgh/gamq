@@ -4,12 +4,12 @@ import ()
 
 type Queue struct {
 	Name        string
-	Messages    chan<- string
+	Messages    chan<- *string
 	Subscribers chan<- *Client
 }
 
 func (q *Queue) Initialize() {
-	messages := make(chan string)
+	messages := make(chan *string)
 	subscribers := make(chan *Client)
 
 	messageHandler1 := DummyMessageHandler{}
