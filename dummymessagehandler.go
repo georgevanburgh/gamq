@@ -38,7 +38,7 @@ func (dmh *DummyMessageHandler) Initialize(input chan *string) chan *string {
 }
 
 func (dmh *DummyMessageHandler) logMetrics() {
-	for range time.Tick(time.Second) {
+	for _ = range time.Tick(time.Second) {
 		// Die with the handler
 		if !dmh.running {
 			break
