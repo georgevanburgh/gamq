@@ -38,17 +38,17 @@ func (manager *ConnectionManager) Initialize(config *Config) {
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
 
 	if err != nil {
-		log.Errorf("An error occured whilst opening a socket for reading: %s\n",
+		log.Errorf("An error occured whilst opening a socket for reading: %s",
 			err.Error())
 	}
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Errorf("An error occured whilst opening a socket for reading: %s\n",
+			log.Errorf("An error occured whilst opening a socket for reading: %s",
 				err.Error())
 		}
-		log.Debug("A new connection was opened.\n")
+		log.Debug("A new connection was opened.")
 		manager.wg.Add(1)
 		go manager.handleConnection(&conn)
 	}
@@ -71,12 +71,11 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 			break
 		}
 
-		stringLine := strings.Split(string(line[:len(line)]), " ")
-		stringLine[0] = strings.ToUpper(stringLine[0])
-		// log.Debugf("A command was received: %s", stringLine)
+		tokenisedLine := strings.Fields(string(line[:len(line)]))
+		tokenisedLine[0] = strings.ToUpper(tokenisedLine[0])
 
 		// Parse command and (optionally) return response (if any)
-		manager.parseClientCommand(stringLine, &client)
+		manager.parseClientCommand(tokenisedLine, &client)
 	}
 
 	log.Info("A connection was closed")
@@ -92,7 +91,8 @@ func (manager *ConnectionManager) parseClientCommand(commandTokens []string, cli
 	case "HELP":
 		manager.sendStringToClient(HELPSTRING, client)
 	case "PUB":
-		manager.qm.Publish(commandTokens[1], strings.Join(commandTokens[2:], " "))
+		message := strings.Join(commandTokens[2:], " ")
+		manager.qm.Publish(commandTokens[1], &message)
 		// manager.sendStringToClient("PUBACK", client)
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)

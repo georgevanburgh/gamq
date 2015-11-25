@@ -18,7 +18,7 @@ func main() {
 	// Set up logging
 	initializeLogging()
 
-	// In the event of an unexpected shutdown - flush the log
+	// Flush the log before we shutdown
 	defer log.Flush()
 
 	// Parse the command line flags
@@ -28,8 +28,8 @@ func main() {
 		defer profile.Start(profile.CPUProfile).Stop()
 	}
 
-	log.Info("Broker started.")
-	log.Infof("Executing on %d threads", runtime.GOMAXPROCS(-1))
+	log.Infof("Broker started on port: %d", config.Port)
+	log.Infof("Executing on: %d threads", runtime.GOMAXPROCS(-1))
 
 	connectionManager := gamq.ConnectionManager{}
 	connectionManager.Initialize(&config)

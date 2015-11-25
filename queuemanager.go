@@ -13,18 +13,18 @@ func (qm *QueueManager) Initialize() {
 	log.Debug("Initialized QueueManager")
 }
 
-func (qm *QueueManager) Publish(queueName string, message string) {
+func (qm *QueueManager) Publish(queueName string, message *string) {
 	// log.Debugf("Publishing message to %s: %s", queueName, message)
 
 	queueToPublishTo := qm.getQueueSafely(queueName)
-	queueToPublishTo.Messages <- &message
+	queueToPublishTo.Publish(message)
 }
 
 func (qm *QueueManager) Subscribe(queueName string, client *Client) {
 	log.Infof("%s subscribed to %s", client.Name, queueName)
 
 	queueToSubscribeTo := qm.getQueueSafely(queueName)
-	queueToSubscribeTo.Subscribers <- client
+	queueToSubscribeTo.AddSubscriber(client)
 }
 
 func (qm *QueueManager) CloseQueue(queueName string) {

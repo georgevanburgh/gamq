@@ -27,10 +27,10 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	dummyClient := Client{Name: "Test", Writer: dummyWriter}
 
 	// Add the subscription
-	underTest.Subscribers <- &dummyClient
+	underTest.AddSubscriber(&dummyClient)
 
 	// Queue the message
-	underTest.Messages <- &testMessage
+	underTest.Publish(&testMessage)
 
 	gomega.Eventually(func() string {
 		return writerBuffer.String()
@@ -44,16 +44,6 @@ func TestQueue_initialize_completesSuccessfully(t *testing.T) {
 
 	// Queue should be named correctly
 	if underTest.Name != TEST_QUEUE_NAME {
-		t.Fail()
-	}
-
-	// Messages channel should be initialized
-	if underTest.Messages == nil {
-		t.Fail()
-	}
-
-	// Subscribers channel should be initialized
-	if underTest.Subscribers == nil {
 		t.Fail()
 	}
 }
