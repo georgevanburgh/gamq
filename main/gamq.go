@@ -28,8 +28,8 @@ func main() {
 		defer profile.Start(profile.CPUProfile).Stop()
 	}
 
-	log.Info("Broker started.\n")
-	log.Infof("Executing on %d threads\n", runtime.GOMAXPROCS(-1))
+	log.Info("Broker started.")
+	log.Infof("Executing on %d threads", runtime.GOMAXPROCS(-1))
 
 	connectionManager := gamq.ConnectionManager{}
 	connectionManager.Initialize(&config)
