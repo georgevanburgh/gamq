@@ -10,18 +10,18 @@ type QueueManager struct {
 
 func (qm *QueueManager) Initialize() {
 	qm.queues = make(map[string]*Queue)
-	log.Debug("Initialized QueueManager\n")
+	log.Debug("Initialized QueueManager")
 }
 
 func (qm *QueueManager) Publish(queueName string, message string) {
-	// log.Debugf("Publishing message to %s: %s\n", queueName, message)
+	// log.Debugf("Publishing message to %s: %s", queueName, message)
 
 	queueToPublishTo := qm.getQueueSafely(queueName)
 	queueToPublishTo.Messages <- &message
 }
 
 func (qm *QueueManager) Subscribe(queueName string, client *Client) {
-	log.Infof("%s subscribed to %s\n", client.Name, queueName)
+	log.Infof("%s subscribed to %s", client.Name, queueName)
 
 	queueToSubscribeTo := qm.getQueueSafely(queueName)
 	queueToSubscribeTo.Subscribers <- client

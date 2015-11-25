@@ -22,7 +22,7 @@ func (dmh *DummyMessageHandler) Initialize(input chan *string) chan *string {
 			message, more := <-input
 			atomic.AddUint64(&dmh.messagesSentLastSecond, 1)
 			if more {
-				// log.Debugf("%s\n", &message)
+				// log.Debugf("%s", &message)
 				outputChannel <- message
 			} else {
 				// We're done
@@ -46,7 +46,7 @@ func (dmh *DummyMessageHandler) logMetrics() {
 
 		// Print out the number of messages published last second
 		currentValue := atomic.LoadUint64(&dmh.messagesSentLastSecond)
-		log.Warnf("%d/second\n", currentValue)
+		log.Infof("%d/second", currentValue)
 		atomic.StoreUint64(&dmh.messagesSentLastSecond, 0)
 	}
 }
