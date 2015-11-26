@@ -5,11 +5,15 @@ import (
 )
 
 type QueueManager struct {
-	queues map[string]*Queue
+	queues         map[string]*Queue
+	metricsChannel chan<- *Metric
 }
 
 func (qm *QueueManager) Initialize() {
 	qm.queues = make(map[string]*Queue)
+
+	metricsManager := MetricsManager{}
+	qm.metricsChannel = metricsManager.Initialize()
 	log.Debug("Initialized QueueManager")
 }
 
@@ -38,7 +42,7 @@ func (qm *QueueManager) getQueueSafely(queueName string) *Queue {
 	queueToReturn, present := qm.queues[queueName]
 	if !present {
 		newQueue := Queue{Name: queueName}
-		newQueue.Initialize()
+		newQueue.Initialize(qm.metricsChannel)
 		qm.queues[queueName] = &newQueue
 		queueToReturn = qm.queues[queueName]
 	}

@@ -9,14 +9,16 @@ import (
 type Queue struct {
 	Name                   string
 	messages               chan *string
+	metrics                chan<- *Metric
 	subscribers            map[string]*Client
 	running                bool
 	messagesSentLastSecond uint64 // messagesSentLastSecond should never be > 0
 }
 
-func (q *Queue) Initialize() {
+func (q *Queue) Initialize(metricsChannel chan<- *Metric) {
 	q.messages = make(chan *string)
 	q.subscribers = make(map[string]*Client)
+	q.metrics = metricsChannel
 
 	messageHandler1 := DummyMessageHandler{}
 	messageHandler2 := DummyMessageHandler{}
@@ -74,9 +76,9 @@ func (q *Queue) logMetrics() {
 		}
 
 		// Print out various metrics
-		currentValue := atomic.LoadUint64(&q.messagesSentLastSecond)
-		log.Infof("%d/second", currentValue)
-		log.Infof("%d subscribers", len(q.subscribers))
-		atomic.StoreUint64(&q.messagesSentLastSecond, 0)
+		currentMessageRate := atomic.SwapUint64(&q.messagesSentLastSecond, 0)
+
+		q.metrics <- &Metric{Name: "messagerate", Value: int64(currentMessageRate), Type: "counter"}
+		q.metrics <- &Metric{Name: "subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
 	}
 }
