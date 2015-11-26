@@ -13,7 +13,7 @@ func TestConnectionManager_parseClientCommand_helpMessageReturns(t *testing.T) {
 	bufWriter := bufio.NewWriter(buf)
 	mockClient := Client{Name: "Mock", Writer: bufWriter}
 
-	underTest.parseClientCommand([]string{"HELP"}, &mockClient)
+	underTest.parseClientCommand("HELP", &mockClient)
 
 	if buf.String() == UNRECOGNISEDCOMMANDTEXT {
 		t.Fail()
@@ -27,7 +27,7 @@ func TestConnectionManager_parseClientCommand_isCaseInsensitive(t *testing.T) {
 	bufWriter := bufio.NewWriter(buf)
 	mockClient := Client{Name: "Mock", Writer: bufWriter}
 
-	underTest.parseClientCommand([]string{"help"}, &mockClient)
+	underTest.parseClientCommand("help", &mockClient)
 
 	if buf.String() == UNRECOGNISEDCOMMANDTEXT {
 		t.Fail()

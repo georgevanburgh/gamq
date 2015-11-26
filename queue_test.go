@@ -24,7 +24,8 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 
 	writerBuffer := new(bytes.Buffer)
 	dummyWriter := bufio.NewWriter(writerBuffer)
-	dummyClient := Client{Name: "Test", Writer: dummyWriter}
+	closedChannel := make(chan bool)
+	dummyClient := Client{Name: "Test", Writer: dummyWriter, Closed: &closedChannel}
 
 	// Add the subscription
 	underTest.AddSubscriber(&dummyClient)

@@ -6,11 +6,11 @@ import (
 
 type MessageShipper struct {
 	messageChannel chan *string
-	subscribers    *[]*Client
+	subscribers    *map[string]*Client
 }
 
-func (shipper *MessageShipper) Initialize(inputChannel chan *string, subscriberArray *[]*Client) chan<- *string {
-	shipper.subscribers = subscriberArray
+func (shipper *MessageShipper) Initialize(inputChannel chan *string, subscriberMap *map[string]*Client) chan<- *string {
+	shipper.subscribers = subscriberMap
 	shipper.messageChannel = inputChannel
 
 	go shipper.forwardMessageToClients()

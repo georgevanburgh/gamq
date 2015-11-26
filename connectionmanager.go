@@ -58,9 +58,11 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 	defer manager.wg.Done()
 	connReader := bufio.NewReader(*conn)
 	connWriter := bufio.NewWriter(*conn)
+	closedChannel := make(chan bool)
 	client := Client{Name: strconv.Itoa(manager.rand.Int()),
 		Writer: connWriter,
-		Reader: connReader}
+		Reader: connReader,
+		Closed: &closedChannel}
 
 	for {
 		// Read until newline
@@ -68,24 +70,27 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 
 		if err != nil {
 			// Connection has been closed
+			log.Debugf("%s closed connection", client.Name)
+			*client.Closed <- true
 			break
 		}
 
-		tokenisedLine := strings.Fields(string(line[:len(line)]))
-		tokenisedLine[0] = strings.ToUpper(tokenisedLine[0])
-
 		// Parse command and (optionally) return response (if any)
-		manager.parseClientCommand(tokenisedLine, &client)
+		manager.parseClientCommand(line, &client)
 	}
 
 	log.Info("A connection was closed")
 }
 
-func (manager *ConnectionManager) parseClientCommand(commandTokens []string, client *Client) {
+func (manager *ConnectionManager) parseClientCommand(commandLine string, client *Client) {
+
+	commandTokens := strings.Fields(string(commandLine[:len(commandLine)]))
 
 	if len(commandTokens) == 0 {
 		return
 	}
+
+	commandTokens[0] = strings.ToUpper(commandTokens[0])
 
 	switch commandTokens[0] {
 	case "HELP":

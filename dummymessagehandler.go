@@ -21,7 +21,7 @@ func (dmh *DummyMessageHandler) Initialize(input <-chan *string) chan *string {
 				outputChannel <- message
 			} else {
 				// We're done
-				log.Info("Closing output channel")
+				log.Debug("Closing output channel")
 				dmh.running = false
 				close(outputChannel)
 				return
