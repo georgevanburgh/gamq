@@ -20,7 +20,7 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	underTest := Queue{Name: TEST_QUEUE_NAME}
 	testMessage := "Testing!"
 
-	dummyMetricsPipe := make(chan string)
+	dummyMetricsPipe := make(chan<- *Metric)
 	underTest.Initialize(dummyMetricsPipe)
 
 	writerBuffer := new(bytes.Buffer)
@@ -42,7 +42,7 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 func TestQueue_initialize_completesSuccessfully(t *testing.T) {
 	underTest := Queue{Name: TEST_QUEUE_NAME}
 
-	dummyMetricsPipe := make(chan string)
+	dummyMetricsPipe := make(chan<- *Metric)
 	underTest.Initialize(dummyMetricsPipe)
 
 	// Queue should be named correctly
