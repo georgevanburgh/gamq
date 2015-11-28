@@ -27,7 +27,7 @@ type ConnectionManager struct {
 	rand *rand.Rand
 }
 
-func (manager *ConnectionManager) Initialize(config *Config) {
+func (manager *ConnectionManager) Initialize() {
 	// Initialize our random number generator (used for naming new connections)
 	// A different seed will be used on each startup, for no good reason
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -35,7 +35,7 @@ func (manager *ConnectionManager) Initialize(config *Config) {
 	manager.qm = QueueManager{}
 	manager.qm.Initialize()
 
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", Configuration.Port))
 
 	if err != nil {
 		log.Errorf("An error occured whilst opening a socket for reading: %s",
