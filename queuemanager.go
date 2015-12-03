@@ -13,7 +13,7 @@ func (qm *QueueManager) Initialize() {
 	qm.queues = make(map[string]*Queue)
 
 	metricsManager := MetricsManager{}
-	qm.metricsChannel = metricsManager.Initialize()
+	qm.metricsChannel = metricsManager.Initialize(qm)
 	log.Debug("Initialized QueueManager")
 }
 

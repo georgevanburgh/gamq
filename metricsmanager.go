@@ -1,18 +1,26 @@
 package gamq
 
 import (
+	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/quipo/statsd"
 	"time"
+)
+
+const (
+	MetricsQueueName = "metrics"
 )
 
 type MetricsManager struct {
 	metricsChannel chan *Metric
 	statsBuffer    *statsd.StatsdBuffer
 	statsdEnabled  bool
+	queueManager   *QueueManager
 }
 
-func (m *MetricsManager) Initialize() chan<- *Metric {
+func (m *MetricsManager) Initialize(givenQueueManager *QueueManager) chan<- *Metric {
+	m.queueManager = givenQueueManager
+
 	m.metricsChannel = make(chan *Metric, 100)
 
 	if Configuration.StatsDEndpoint != "" {
@@ -32,11 +40,17 @@ func (m *MetricsManager) Initialize() chan<- *Metric {
 }
 
 func (m *MetricsManager) listenForMetrics() {
-	defer m.statsBuffer.Close()
+	if m.statsdEnabled {
+		defer m.statsBuffer.Close()
+	}
+
 	var metric *Metric
 	for {
 		metric = <-m.metricsChannel
-		log.Debugf("Received metric: %s - %d", metric.Name, metric.Value)
+		log.Debugf("Received metric: %s - %v", metric.Name, metric.Value)
+
+		stringToPublish := fmt.Sprintf("%s:%s", metric.Name, metric.Value)
+		m.queueManager.Publish(MetricsQueueName, &stringToPublish)
 
 		if m.statsdEnabled {
 			log.Debugf("Logging metrics")

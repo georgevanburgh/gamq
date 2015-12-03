@@ -35,6 +35,7 @@ func (q *Queue) Initialize(metricsChannel chan<- *Metric) {
 }
 
 func (q *Queue) Close() {
+	log.Debugf("Closing %s", q.Name)
 	close(q.messages)
 	q.running = false
 }
@@ -75,10 +76,15 @@ func (q *Queue) logMetrics() {
 			break
 		}
 
+		// If this is the metrics queue - don't log metrics
+		if q.Name == MetricsQueueName {
+			break
+		}
+
 		// Print out various metrics
 		currentMessageRate := atomic.SwapUint64(&q.messagesSentLastSecond, 0)
 
-		q.metrics <- &Metric{Name: "messagerate", Value: int64(currentMessageRate), Type: "counter"}
-		q.metrics <- &Metric{Name: "subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
+		q.metrics <- &Metric{Name: q.Name + ".messagerate", Value: int64(currentMessageRate), Type: "counter"}
+		q.metrics <- &Metric{Name: q.Name + ".subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
 	}
 }

@@ -22,7 +22,6 @@ func (shipper *MessageShipper) forwardMessageToClients() {
 	for {
 		message, more := <-shipper.messageChannel
 		if more {
-			_ = "breakpoint"
 			for _, subscriber := range *shipper.subscribers {
 				_, err := subscriber.Writer.WriteString(*message)
 				if err != nil {
