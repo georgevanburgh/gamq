@@ -10,15 +10,17 @@ type Queue struct {
 	Name                   string
 	messages               chan *string
 	metrics                chan<- *Metric
+	closing                chan<- *string
 	subscribers            map[string]*Client
 	running                bool
 	messagesSentLastSecond uint64 // messagesSentLastSecond should never be > 0
 }
 
-func (q *Queue) Initialize(metricsChannel chan<- *Metric) {
+func (q *Queue) Initialize(metricsChannel chan<- *Metric, closingChannel chan<- *string) {
 	q.messages = make(chan *string)
 	q.subscribers = make(map[string]*Client)
 	q.metrics = metricsChannel
+	q.closing = closingChannel
 
 	messageHandler1 := DummyMessageHandler{}
 	messageHandler2 := DummyMessageHandler{}
@@ -36,6 +38,7 @@ func (q *Queue) Initialize(metricsChannel chan<- *Metric) {
 
 func (q *Queue) Close() {
 	log.Debugf("Closing %s", q.Name)
+	q.closing <- &q.Name
 	close(q.messages)
 	q.running = false
 }

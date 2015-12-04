@@ -5,15 +5,20 @@ import (
 )
 
 type QueueManager struct {
-	queues         map[string]*Queue
-	metricsChannel chan<- *Metric
+	queues                   map[string]*Queue
+	metricsChannel           chan<- *Metric
+	closeNotificationChannel chan *string
 }
 
 func (qm *QueueManager) Initialize() {
 	qm.queues = make(map[string]*Queue)
+	qm.closeNotificationChannel = make(chan *string, 10)
 
 	metricsManager := MetricsManager{}
 	qm.metricsChannel = metricsManager.Initialize(qm)
+
+	go qm.listenForClosingQueues()
+
 	log.Debug("Initialized QueueManager")
 }
 
@@ -42,10 +47,18 @@ func (qm *QueueManager) getQueueSafely(queueName string) *Queue {
 	queueToReturn, present := qm.queues[queueName]
 	if !present {
 		newQueue := Queue{Name: queueName}
-		newQueue.Initialize(qm.metricsChannel)
+		newQueue.Initialize(qm.metricsChannel, qm.closeNotificationChannel)
 		qm.queues[queueName] = &newQueue
 		queueToReturn = qm.queues[queueName]
 	}
 
 	return queueToReturn
+}
+
+func (qm *QueueManager) listenForClosingQueues() {
+	for {
+		closingQueue := <-qm.closeNotificationChannel
+		log.Debugf("Removing %s from active queues", *closingQueue)
+		delete(qm.queues, *closingQueue)
+	}
 }
