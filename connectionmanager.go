@@ -25,6 +25,7 @@ type ConnectionManager struct {
 	wg   sync.WaitGroup
 	qm   QueueManager
 	rand *rand.Rand
+	ln   *net.Listener
 }
 
 func (manager *ConnectionManager) Initialize() {
@@ -36,6 +37,7 @@ func (manager *ConnectionManager) Initialize() {
 	manager.qm.Initialize()
 
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", Configuration.Port))
+	manager.ln = &ln // For unit test synchronisation
 
 	if err != nil {
 		log.Errorf("An error occured whilst opening a socket for reading: %s",
