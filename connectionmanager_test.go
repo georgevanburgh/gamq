@@ -45,7 +45,11 @@ func TestConnectionManager_parseClientCommand_invalidCommandProcessedCorrectly(t
 
 	underTest.parseClientCommand("fdkfjadkfh", &mockClient)
 
+<<<<<<< HEAD
 	if dummyWriterBuffer.String() != UNRECOGNISEDCOMMANDTEXT+"\n" {
+=======
+	if dummyWriterBuffer.String() != UNRECOGNISEDCOMMANDTEXT {
+>>>>>>> 82ea880aced5d1225344a6bc75f5ef914d74bf29
 		t.Fail()
 	}
 }
