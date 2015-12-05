@@ -36,6 +36,28 @@ func TestConnectionManager_parseClientCommand_isCaseInsensitive(t *testing.T) {
 	}
 }
 
+func TestConnectionManager_parseClientCommand_invalidCommandProcessedCorrectly(t *testing.T) {
+	underTest := ConnectionManager{}
+
+	dummyWriterBuffer := new(bytes.Buffer)
+	bufWriter := bufio.NewWriter(dummyWriterBuffer)
+	mockClient := Client{Name: "Mock", Writer: bufWriter}
+
+	underTest.parseClientCommand("fdkfjadkfh", &mockClient)
+
+	if dummyWriterBuffer.String() != UNRECOGNISEDCOMMANDTEXT+"\n" {
+		t.Fail()
+	}
+}
+
+func TestConnectionManager_emptyClientCommand_handledGracefully(t *testing.T) {
+	underTest := ConnectionManager{}
+
+	mockClient := Client{}
+
+	underTest.parseClientCommand("", &mockClient)
+}
+
 func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testing.T) {
 	// Choose a high port, so we don't need sudo to run tests
 	config := Config{}
@@ -46,7 +68,7 @@ func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testin
 	go underTest.Initialize()
 
 	testConn, err := net.Dial("tcp", "localhost:55555")
-	if err != nil {
+	if err != nil || testConn == nil {
 		t.Fail()
 	}
 
@@ -56,4 +78,6 @@ func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testin
 	if err != nil || response != "PINGRESP\n" {
 		t.Fail()
 	}
+
+	testConn.Close()
 }
