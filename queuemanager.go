@@ -39,7 +39,6 @@ func (qm *QueueManager) Subscribe(queueName string, client *Client) {
 func (qm *QueueManager) CloseQueue(queueName string) {
 	log.Infof("Closing %s", queueName)
 	queueToClose := qm.getQueueSafely(queueName)
-	delete(qm.queues, queueName)
 	queueToClose.Close()
 }
 
