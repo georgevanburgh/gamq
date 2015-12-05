@@ -3,6 +3,8 @@ package gamq
 import (
 	"bufio"
 	"bytes"
+	"fmt"
+	"net"
 	"testing"
 )
 
@@ -30,6 +32,28 @@ func TestConnectionManager_parseClientCommand_isCaseInsensitive(t *testing.T) {
 	underTest.parseClientCommand("help", &mockClient)
 
 	if buf.String() == UNRECOGNISEDCOMMANDTEXT {
+		t.Fail()
+	}
+}
+
+func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testing.T) {
+	// Choose a high port, so we don't need sudo to run tests
+	config := Config{}
+	config.Port = 55555
+	SetConfig(&config)
+
+	underTest := ConnectionManager{}
+	go underTest.Initialize()
+
+	testConn, err := net.Dial("tcp", "localhost:55555")
+	if err != nil {
+		t.Fail()
+	}
+
+	fmt.Fprintf(testConn, "PINGREQ\n")
+	response, err := bufio.NewReader(testConn).ReadString('\n')
+
+	if err != nil || response != "PINGRESP\n" {
 		t.Fail()
 	}
 }
