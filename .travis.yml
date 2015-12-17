@@ -31,3 +31,4 @@ deploy:
     repo: FireEater64/gamq
     branch: master
     go: '1.5'
+    tags: true
