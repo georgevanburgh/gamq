@@ -26,5 +26,8 @@ deploy:
   api_key:
     secure: g69DJJJjOF0YP7ZA4nJYSuLja3kz001N7d/n5hazMi3lkWOwZVXMqJYcir3/vqVtLP4k36mdpfpRHrKo9zyf228tvICyEG/nHcIlm4u7XJZoXfXlwR8aT8d2OGSQAKu85lH6SSxdT271Xef9YPvLFYsKoAXnyUPp0G6PLuW0UhR9hqQ9VweQKiqPssFDOi2kP5mhUIeNGBOKRiBIPVybzDoWUjVYY4hgbOCtrKvspcOSy1lcHINIFubdpFoUViiaV95vuVbFTQLYny/xDsC06Q8LI9HfT0iQCdk9W85Xndy4d/vt0RtZkbsKe+3dQlhwWlMe4/MMnvm38u6ip2EuFw3TperiGdsMXglGrGF6JmEw0ZSKMSzEYa3C26JCtVtctUiBfVasBqHoyRvmPDIimRa2FjHWgUixCUxENqDlZ04wXrp6zpIB8z8qREVJCmp7/rr3w/Ra8+nTHyI3PbP4dPJ/BE1YkagPs8V31VBvMv9ARQiaGqC7ZL9cZ3ZpppLJaq+xpTj3mdWJuAAd52JppGOFq9QPUJluiWvlsKvbn3zRlR8g2o2CP8r3iZ1doFhSyLQqp6XrHt4dPVsBBLm3s1iGSFGkJ6ifJ4kU4TR+zl0hr2v40MC1kJZeOesSQ29qIukWRBdFb+xChey/kWQOPDY9qNDcBpkrE4BcfgS90S4=
   file: gamq
+  skip_cleanup: true
   on:
     repo: FireEater64/gamq
+    branch: master
+    go: '1.5'
