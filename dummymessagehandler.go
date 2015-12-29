@@ -10,7 +10,7 @@ type DummyMessageHandler struct {
 
 func (dmh *DummyMessageHandler) Initialize(input <-chan *string) chan *string {
 
-	outputChannel := make(chan *string)
+	outputChannel := make(chan *string, 10000) // TODO: Should definitely be configurable
 	dmh.running = true
 
 	go func() {

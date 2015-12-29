@@ -6,32 +6,38 @@ import (
 
 type MessageShipper struct {
 	messageChannel chan *string
-	subscribers    *map[string]*Client
+	subscriber     *Client
+	ClientName     string
+	CloseChannel   chan bool
 }
 
-func (shipper *MessageShipper) Initialize(inputChannel chan *string, subscriberMap *map[string]*Client) chan<- *string {
-	shipper.subscribers = subscriberMap
+func (shipper *MessageShipper) Initialize(inputChannel chan *string, subscriber *Client) {
+	shipper.subscriber = subscriber
 	shipper.messageChannel = inputChannel
+	shipper.CloseChannel = make(chan bool)
+	shipper.ClientName = subscriber.Name
 
-	go shipper.forwardMessageToClients()
-
-	return shipper.messageChannel
+	go shipper.forwardMessageToClient()
 }
 
-func (shipper *MessageShipper) forwardMessageToClients() {
+func (shipper *MessageShipper) forwardMessageToClient() {
 	for {
-		message, more := <-shipper.messageChannel
-		if more {
-			for _, subscriber := range *shipper.subscribers {
-				_, err := subscriber.Writer.WriteString(*message)
+		select {
+		case message, more := <-shipper.messageChannel:
+			if more {
+				_, err := shipper.subscriber.Writer.WriteString(*message)
 				if err != nil {
 					log.Errorf("Error whilst sending message to consumer: %s", err)
 				}
-				subscriber.Writer.Flush()
+				shipper.subscriber.Writer.Flush()
+			} else {
+				return
 			}
-		} else {
-			return
+		case closing := <-shipper.CloseChannel:
+			if closing {
+				log.Debugf("Message shipper for %s closing down", shipper.ClientName)
+				return
+			}
 		}
-
 	}
 }
