@@ -3,6 +3,7 @@ package gamq
 import (
 	"bufio"
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/onsi/gomega"
@@ -38,6 +39,49 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	gomega.Eventually(func() string {
 		return writerBuffer.String()
 	}).Should(gomega.Equal(testMessage))
+}
+
+func TestQueue_sendMessage_generatesMetrics(t *testing.T) {
+	// More async testing
+	gomega.RegisterTestingT(t)
+
+	// We should receive metrics ending in these names from a queue during
+	// normal operation
+	expectedMetricNames := [...]string{"messagerate", "subscribers", "pending"}
+
+	// Mocking
+	dummyMetricsChannel := make(chan *Metric)
+	dummyClosingChannel := make(chan *string)
+
+	underTest := Queue{}
+	underTest.Initialize(dummyMetricsChannel, dummyClosingChannel)
+
+	// After a subscriber is added, we should start receiving metrics
+	dummySubscriber := Client{Closed: new(chan bool)}
+	underTest.AddSubscriber(&dummySubscriber)
+
+	seenMetricNames := make(map[string]bool)
+	go func() {
+		for {
+			metric := <-dummyMetricsChannel
+			metricNameChunks := strings.Split(metric.Name, ".")
+			finalMetricName := metricNameChunks[len(metricNameChunks)-1]
+			seenMetricNames[finalMetricName] = true
+		}
+	}()
+
+	// Check we've received metrics ending in all the expected names
+	// NOTE: It might take longer than the default gomega 1 second timeout to
+	// receive all the metrics we're expecting
+	gomega.Eventually(func() bool {
+		toReturn := true
+		for _, metricName := range expectedMetricNames {
+			if !seenMetricNames[metricName] {
+				toReturn = false
+			}
+		}
+		return toReturn
+	}, "5s").Should(gomega.BeTrue()) //  Timeout upped to 5 seconds
 }
 
 // A unsubscribing client should not be considered for message delivery
@@ -97,6 +141,34 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 	gomega.Eventually(func() string {
 		return writerBuffer2.String()
 	}).Should(gomega.Equal(testMessage))
+}
+
+func TestQueue_xPendingMetrics_producesCorrectMetric(t *testing.T) {
+	// Need gomega for async testing
+	gomega.RegisterTestingT(t)
+
+	numberOfMessagesToSend := 10
+
+	underTest := Queue{Name: TEST_QUEUE_NAME}
+	testMessage := "Testing!"
+
+	dummyMetricsPipe := make(chan *Metric)
+	dummyClosingPipe := make(chan *string)
+	underTest.Initialize(dummyMetricsPipe, dummyClosingPipe)
+
+	for i := 0; i < numberOfMessagesToSend; i++ {
+		underTest.Publish(&testMessage)
+	}
+
+	// Eventually, we should see `numberOfMessagesToSend` pending messages
+	gomega.Eventually(func() int {
+		metric := <-dummyMetricsPipe
+		if strings.Contains(metric.Name, "pending") {
+			return int(metric.Value)
+		} else {
+			return -1
+		}
+	}, "5s").Should(gomega.Equal(numberOfMessagesToSend))
 }
 
 func TestQueue_initialize_completesSuccessfully(t *testing.T) {

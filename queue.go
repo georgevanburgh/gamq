@@ -96,10 +96,11 @@ func (q *Queue) logMetrics() {
 			break
 		}
 
-		// Print out various metrics
+		// Send various metrics
 		currentMessageRate := atomic.SwapUint64(&q.messagesSentLastSecond, 0)
 
 		q.metrics <- &Metric{Name: q.Name + ".messagerate", Value: int64(currentMessageRate), Type: "counter"}
 		q.metrics <- &Metric{Name: q.Name + ".subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
+		q.metrics <- &Metric{Name: q.Name + ".pending", Value: int64(len(q.messageOutput)), Type: "guage"}
 	}
 }
