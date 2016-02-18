@@ -19,7 +19,7 @@ func TestConnectionManager_parseClientCommand_helpMessageReturns(t *testing.T) {
 
 	underTest.parseClientCommand("HELP", &mockClient)
 
-	if buf.String() == UNRECOGNISEDCOMMANDTEXT {
+	if buf.String() == unrecognisedCommandText {
 		t.Fail()
 	}
 }
@@ -33,7 +33,7 @@ func TestConnectionManager_parseClientCommand_isCaseInsensitive(t *testing.T) {
 
 	underTest.parseClientCommand("help", &mockClient)
 
-	if buf.String() == UNRECOGNISEDCOMMANDTEXT {
+	if buf.String() == unrecognisedCommandText {
 		t.Fail()
 	}
 }
@@ -47,7 +47,7 @@ func TestConnectionManager_parseClientCommand_invalidCommandProcessedCorrectly(t
 
 	underTest.parseClientCommand("fdkfjadkfh", &mockClient)
 
-	if dummyWriterBuffer.String() != UNRECOGNISEDCOMMANDTEXT+"\n" {
+	if dummyWriterBuffer.String() != unrecognisedCommandText+"\n" {
 		t.Fail()
 	}
 }
@@ -72,7 +72,7 @@ func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testin
 	go underTest.Initialize()
 
 	gomega.Eventually(func() *net.Listener {
-		return underTest.ln
+		return &underTest.tcpLn
 	}).ShouldNot(gomega.BeNil())
 
 	testConn, err := net.Dial("tcp", "localhost:55555")
