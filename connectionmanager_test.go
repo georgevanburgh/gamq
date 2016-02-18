@@ -71,8 +71,8 @@ func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testin
 	underTest := ConnectionManager{}
 	go underTest.Initialize()
 
-	gomega.Eventually(func() *net.Listener {
-		return &underTest.tcpLn
+	gomega.Eventually(func() net.Listener {
+		return underTest.tcpLn
 	}).ShouldNot(gomega.BeNil())
 
 	testConn, err := net.Dial("tcp", "localhost:55555")
