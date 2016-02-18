@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	MetricsQueueName = "metrics"
+	metricsQueueName = "metrics"
 )
 
 type MetricsManager struct {
@@ -31,6 +31,6 @@ func (m *MetricsManager) listenForMetrics() {
 		log.Debugf("Received metric: %s - %v", metric.Name, metric.Value)
 
 		stringToPublish := fmt.Sprintf("%s:%s", metric.Name, metric.Value)
-		m.queueManager.Publish(MetricsQueueName, &stringToPublish)
+		m.queueManager.Publish(metricsQueueName, &stringToPublish)
 	}
 }

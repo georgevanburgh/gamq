@@ -92,7 +92,7 @@ func (q *Queue) logMetrics() {
 		}
 
 		// If this is the metrics queue - don't log metrics
-		if q.Name == MetricsQueueName {
+		if q.Name == metricsQueueName {
 			break
 		}
 

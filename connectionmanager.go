@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	UNRECOGNISEDCOMMANDTEXT = "Unrecognised command"
-	HELPSTRING              = `Available commands:
+	unrecognisedCommandText = "Unrecognised command"
+	helpString              = `Available commands:
 	HELP: Prints this text
 	PUB <queue> <message>: Publish <message> to <queue>
 	SUB <queue>: Subscribe to messages on <queue>
@@ -22,10 +22,11 @@ const (
 )
 
 type ConnectionManager struct {
-	wg   sync.WaitGroup
-	qm   QueueManager
-	rand *rand.Rand
-	ln   *net.Listener
+	wg    sync.WaitGroup
+	qm    QueueManager
+	rand  *rand.Rand
+	tcpLn net.Listener
+	udpLn *net.Listener
 }
 
 func (manager *ConnectionManager) Initialize() {
@@ -36,21 +37,58 @@ func (manager *ConnectionManager) Initialize() {
 	manager.qm = QueueManager{}
 	manager.qm.Initialize()
 
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", Configuration.Port))
-	manager.ln = &ln // For unit test synchronisation
+	// Open TCP socket
+	tcpAddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port)) // TODO: Handle error
+	tcpListener, tcpErr := net.ListenTCP("tcp", tcpAddr)
+	manager.tcpLn = tcpListener // Keep a a reference for unit testing purposes
 
-	if err != nil {
-		log.Errorf("An error occured whilst opening a socket for reading: %s",
-			err.Error())
+	if tcpErr != nil {
+		log.Criticalf("Error whilst opening TCP socket: %s", tcpErr.Error())
+		panic(tcpErr.Error())
 	}
 
+	manager.wg.Add(1)
+	go manager.listenOnConnection(tcpListener)
+
+	// Listen on UDP socket
+	udpAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", Configuration.Port))
+	udpListener, _ := net.ListenUDP("udp", udpAddr)
+
+	manager.wg.Add(1)
+	go manager.listenOnUdpConnection(udpListener)
+
+	manager.wg.Wait()
+}
+
+func (manager *ConnectionManager) listenOnUdpConnection(givenConnection *net.UDPConn) {
+	var buffer [2048]byte
+
+	// Listen forever
 	for {
-		conn, err := ln.Accept()
+		length, remoteAddr, err := givenConnection.ReadFromUDP(buffer[0:])
 		if err != nil {
-			log.Errorf("An error occured whilst opening a socket for reading: %s",
+			panic(err.Error())
+		}
+
+		writer := NewUdpWriter(givenConnection, remoteAddr)
+		bufferedWriter := bufio.NewWriter(writer)
+
+		client := NewClient(strconv.Itoa(manager.rand.Int()), bufferedWriter, nil)
+		manager.parseClientCommand(string(buffer[:length]), client)
+
+		log.Debugf("Read %d bytes from %s: %s", length, remoteAddr, string(buffer[:length]))
+	}
+}
+
+func (manager *ConnectionManager) listenOnConnection(givenListener net.Listener) {
+	defer manager.wg.Done()
+	for {
+		conn, err := givenListener.Accept()
+		if err != nil {
+			log.Errorf("An error occured whilst opening a TCP socket for reading: %s",
 				err.Error())
 		}
-		log.Debug("A new connection was opened.")
+		log.Debug("A new TCP connection was opened.")
 		manager.wg.Add(1)
 		go manager.handleConnection(&conn)
 	}
@@ -96,19 +134,21 @@ func (manager *ConnectionManager) parseClientCommand(commandLine string, client 
 
 	switch commandTokens[0] {
 	case "HELP":
-		manager.sendStringToClient(HELPSTRING, client)
+		manager.sendStringToClient(helpString, client)
 	case "PUB":
 		message := strings.Join(commandTokens[2:], " ")
 		manager.qm.Publish(commandTokens[1], &message)
 		// manager.sendStringToClient("PUBACK", client)
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)
+	case "DISCONNECT":
+		*client.Closed <- true
 	case "PINGREQ":
 		manager.sendStringToClient("PINGRESP", client)
 	case "CLOSE":
 		manager.qm.CloseQueue(commandTokens[1])
 	default:
-		manager.sendStringToClient(UNRECOGNISEDCOMMANDTEXT, client)
+		manager.sendStringToClient(unrecognisedCommandText, client)
 	}
 }
 
