@@ -68,8 +68,8 @@ func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testin
 	config.Port = 55555
 	SetConfig(&config)
 
-	underTest := ConnectionManager{}
-	go underTest.Initialize()
+	underTest := NewConnectionManager()
+	go underTest.Start()
 
 	gomega.Eventually(func() net.Listener {
 		return underTest.tcpLn

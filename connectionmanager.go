@@ -3,6 +3,7 @@ package gamq
 import (
 	"bufio"
 	"fmt"
+	"github.com/FireEater64/gamq/udp"
 	log "github.com/cihub/seelog"
 	"math/rand"
 	"net"
@@ -22,55 +23,61 @@ const (
 )
 
 type ConnectionManager struct {
-	wg    sync.WaitGroup
-	qm    QueueManager
-	rand  *rand.Rand
-	tcpLn net.Listener
-	udpLn *net.Listener
+	wg      sync.WaitGroup
+	qm      QueueManager
+	rand    *rand.Rand
+	tcpLn   net.Listener
+	udpConn *net.UDPConn
 }
 
-func (manager *ConnectionManager) Initialize() {
+func NewConnectionManager() *ConnectionManager {
+	manager := ConnectionManager{}
+
 	// Initialize our random number generator (used for naming new connections)
 	// A different seed will be used on each startup, for no good reason
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
+	// TODO: Clean up QueueManager initialization
 	manager.qm = QueueManager{}
 	manager.qm.Initialize()
 
 	// Open TCP socket
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port)) // TODO: Handle error
 	tcpListener, tcpErr := net.ListenTCP("tcp", tcpAddr)
-	manager.tcpLn = tcpListener // Keep a a reference for unit testing purposes
+	manager.tcpLn = tcpListener
 
 	if tcpErr != nil {
 		log.Criticalf("Error whilst opening TCP socket: %s", tcpErr.Error())
 		panic(tcpErr.Error())
 	}
 
-	manager.wg.Add(1)
-	go manager.listenOnConnection(tcpListener)
-
 	// Listen on UDP socket
 	udpAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", Configuration.Port))
-	udpListener, _ := net.ListenUDP("udp", udpAddr)
+	udpConn, _ := net.ListenUDP("udp", udpAddr)
+	manager.udpConn = udpConn
 
-	manager.wg.Add(1)
-	go manager.listenOnUdpConnection(udpListener)
+	return &manager
+}
 
+func (manager *ConnectionManager) Start() {
+	manager.wg.Add(2)
+	go manager.listenOnUdpConnection()
+	go manager.listenOnTcpConnection()
 	manager.wg.Wait()
 }
 
-func (manager *ConnectionManager) listenOnUdpConnection(givenConnection *net.UDPConn) {
+func (manager *ConnectionManager) listenOnUdpConnection() {
 	var buffer [2048]byte
 
 	// Listen forever
+	// TODO: Revisit
 	for {
-		length, remoteAddr, err := givenConnection.ReadFromUDP(buffer[0:])
+		length, remoteAddr, err := manager.udpConn.ReadFromUDP(buffer[0:])
 		if err != nil {
 			panic(err.Error())
 		}
 
-		writer := NewUdpWriter(givenConnection, remoteAddr)
+		writer := udp.NewUDPWriter(manager.udpConn, remoteAddr)
 		bufferedWriter := bufio.NewWriter(writer)
 
 		client := NewClient(strconv.Itoa(manager.rand.Int()), bufferedWriter, nil)
@@ -80,10 +87,10 @@ func (manager *ConnectionManager) listenOnUdpConnection(givenConnection *net.UDP
 	}
 }
 
-func (manager *ConnectionManager) listenOnConnection(givenListener net.Listener) {
+func (manager *ConnectionManager) listenOnTcpConnection() {
 	defer manager.wg.Done()
 	for {
-		conn, err := givenListener.Accept()
+		conn, err := manager.tcpLn.Accept()
 		if err != nil {
 			log.Errorf("An error occured whilst opening a TCP socket for reading: %s",
 				err.Error())

@@ -31,8 +31,8 @@ func main() {
 	log.Infof("Broker started on port: %d", gamq.Configuration.Port)
 	log.Infof("Executing on: %d threads", runtime.GOMAXPROCS(-1))
 
-	connectionManager := gamq.ConnectionManager{}
-	connectionManager.Initialize()
+	connectionManager := gamq.NewConnectionManager()
+	connectionManager.Start()
 }
 
 func initializeLogging() {
