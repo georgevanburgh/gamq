@@ -18,12 +18,11 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	// Need gomega for async testing
 	gomega.RegisterTestingT(t)
 
-	underTest := Queue{Name: TEST_QUEUE_NAME}
 	testMessage := "Testing!"
 
 	dummyMetricsPipe := make(chan<- *Metric)
 	dummyClosingPipe := make(chan<- *string)
-	underTest.Initialize(dummyMetricsPipe, dummyClosingPipe)
+	underTest := NewQueue(TEST_QUEUE_NAME, dummyMetricsPipe, dummyClosingPipe)
 
 	writerBuffer := new(bytes.Buffer)
 	dummyWriter := bufio.NewWriter(writerBuffer)
@@ -53,8 +52,7 @@ func TestQueue_sendMessage_generatesMetrics(t *testing.T) {
 	dummyMetricsChannel := make(chan *Metric)
 	dummyClosingChannel := make(chan *string)
 
-	underTest := Queue{}
-	underTest.Initialize(dummyMetricsChannel, dummyClosingChannel)
+	underTest := NewQueue(TEST_QUEUE_NAME, dummyMetricsChannel, dummyClosingChannel)
 
 	// After a subscriber is added, we should start receiving metrics
 	dummySubscriber := Client{Closed: new(chan bool)}
@@ -89,12 +87,12 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 	// Need gomega for async testing
 	gomega.RegisterTestingT(t)
 
-	underTest := Queue{Name: TEST_QUEUE_NAME}
 	testMessage := "Testing!"
 
 	dummyMetricsPipe := make(chan<- *Metric)
 	dummyClosingPipe := make(chan<- *string)
-	underTest.Initialize(dummyMetricsPipe, dummyClosingPipe)
+
+	underTest := NewQueue(TEST_QUEUE_NAME, dummyMetricsPipe, dummyClosingPipe)
 
 	writerBuffer1 := new(bytes.Buffer)
 	dummyWriter1 := bufio.NewWriter(writerBuffer1)
@@ -149,12 +147,11 @@ func TestQueue_xPendingMetrics_producesCorrectMetric(t *testing.T) {
 
 	numberOfMessagesToSend := 10
 
-	underTest := Queue{Name: TEST_QUEUE_NAME}
 	testMessage := "Testing!"
 
 	dummyMetricsPipe := make(chan *Metric)
 	dummyClosingPipe := make(chan *string)
-	underTest.Initialize(dummyMetricsPipe, dummyClosingPipe)
+	underTest := NewQueue(TEST_QUEUE_NAME, dummyMetricsPipe, dummyClosingPipe)
 
 	for i := 0; i < numberOfMessagesToSend; i++ {
 		underTest.Publish(&testMessage)
@@ -172,11 +169,10 @@ func TestQueue_xPendingMetrics_producesCorrectMetric(t *testing.T) {
 }
 
 func TestQueue_initialize_completesSuccessfully(t *testing.T) {
-	underTest := Queue{Name: TEST_QUEUE_NAME}
-
 	dummyMetricsPipe := make(chan<- *Metric)
 	dummyClosingPipe := make(chan<- *string)
-	underTest.Initialize(dummyMetricsPipe, dummyClosingPipe)
+
+	underTest := NewQueue(TEST_QUEUE_NAME, dummyMetricsPipe, dummyClosingPipe)
 
 	// Queue should be named correctly
 	if underTest.Name != TEST_QUEUE_NAME {

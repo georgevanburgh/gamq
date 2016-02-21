@@ -18,7 +18,8 @@ type Queue struct {
 	messagesSentLastSecond uint64 // messagesSentLastSecond should never be > 0
 }
 
-func (q *Queue) Initialize(metricsChannel chan<- *Metric, closingChannel chan<- *string) {
+func NewQueue(queueName string, metricsChannel chan<- *Metric, closingChannel chan<- *string) *Queue {
+	q := Queue{Name: queueName}
 	q.messageInput = make(chan *string)
 	q.subscribers = make(map[string]*MessageShipper)
 	q.metrics = metricsChannel
@@ -34,6 +35,8 @@ func (q *Queue) Initialize(metricsChannel chan<- *Metric, closingChannel chan<- 
 	// Launch the metrics handler and unsubscribed listener
 	go q.logMetrics()
 	q.running = true
+
+	return &q
 }
 
 func (q *Queue) Close() {

@@ -45,9 +45,8 @@ func (qm *QueueManager) CloseQueue(queueName string) {
 func (qm *QueueManager) getQueueSafely(queueName string) *Queue {
 	queueToReturn, present := qm.queues[queueName]
 	if !present {
-		newQueue := Queue{Name: queueName}
-		newQueue.Initialize(qm.metricsChannel, qm.closeNotificationChannel)
-		qm.queues[queueName] = &newQueue
+		newQueue := NewQueue(queueName, qm.metricsChannel, qm.closeNotificationChannel)
+		qm.queues[queueName] = newQueue
 		queueToReturn = qm.queues[queueName]
 	}
 
