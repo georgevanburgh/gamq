@@ -18,8 +18,9 @@ before_install:
 before_script:
   - go get -d ./...
 script:
-  - go test -v ./...
+  - go test -v ./... -bench=.
   - if ! $HOME/gopath/bin/goveralls -service=travis-ci -repotoken $COVERALLS_TOKEN; then echo "Coveralls not available."; fi
+  - go build main/gamq.go
 
 deploy:
   provider: releases
