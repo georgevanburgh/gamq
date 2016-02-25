@@ -20,6 +20,7 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	gomega.RegisterTestingT(t)
 
 	underTest := Queue{Name: TEST_QUEUE_NAME}
+
 	testMessagePayload := []byte("Testing!")
 	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
 
@@ -40,7 +41,7 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 
 	gomega.Eventually(func() []byte {
 		return writerBuffer.Bytes()
-	}).Should(gomega.Equal(testMessage))
+	}).Should(gomega.Equal(testMessagePayload))
 }
 
 func TestQueue_sendMessage_generatesMetrics(t *testing.T) {
@@ -118,13 +119,13 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 
 	// Bit of a hack - only one of the subscribers will get the message,
 	// and we don't know which one
-	gomega.Eventually(func() string {
+	gomega.Eventually(func() []byte {
 		if writerBuffer1.String() == "" {
-			return writerBuffer2.String()
+			return writerBuffer2.Bytes()
 		} else {
-			return writerBuffer1.String()
+			return writerBuffer1.Bytes()
 		}
-	}).Should(gomega.Equal(testMessage))
+	}).Should(gomega.Equal(testMessagePayload))
 
 	// We'll be reusing these buffers
 	writerBuffer1.Reset()
@@ -141,9 +142,9 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 	// Now send a message - the remaining client should receive it without issue
 	underTest.Publish(testMessage)
 
-	gomega.Eventually(func() string {
-		return writerBuffer2.String()
-	}).Should(gomega.Equal(testMessage))
+	gomega.Eventually(func() []byte {
+		return writerBuffer2.Bytes()
+	}).Should(gomega.Equal(testMessagePayload))
 }
 
 func TestQueue_xPendingMetrics_producesCorrectMetric(t *testing.T) {
