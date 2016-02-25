@@ -3,6 +3,7 @@ package gamq
 import (
 	"bufio"
 	"fmt"
+	"github.com/FireEater64/gamq/message"
 	"github.com/FireEater64/gamq/udp"
 	log "github.com/cihub/seelog"
 	"math/rand"
@@ -14,8 +15,9 @@ import (
 )
 
 const (
-	unrecognisedCommandText = "Unrecognised command"
-	helpString              = `Available commands:
+	unrecognisedCommandText   = "Unrecognised command"
+	udpConnectionReadDeadline = 1
+	helpString                = `Available commands:
 	HELP: Prints this text
 	PUB <queue> <message>: Publish <message> to <queue>
 	SUB <queue>: Subscribe to messages on <queue>
@@ -143,8 +145,11 @@ func (manager *ConnectionManager) parseClientCommand(commandLine string, client 
 	case "HELP":
 		manager.sendStringToClient(helpString, client)
 	case "PUB":
-		message := strings.Join(commandTokens[2:], " ")
-		manager.qm.Publish(commandTokens[1], &message)
+		// TODO: Does this ever need to be a string?
+		messageBody := []byte(strings.Join(commandTokens[2:], " "))
+		messageHeaders := make(map[string]string)
+		message := message.NewMessage(&messageHeaders, &messageBody)
+		manager.qm.Publish(commandTokens[1], message)
 		// manager.sendStringToClient("PUBACK", client)
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)

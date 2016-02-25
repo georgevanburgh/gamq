@@ -1,6 +1,7 @@
 package gamq
 
 import (
+	"github.com/FireEater64/gamq/message"
 	log "github.com/cihub/seelog"
 )
 
@@ -22,7 +23,7 @@ func (qm *QueueManager) Initialize() {
 	log.Debug("Initialized QueueManager")
 }
 
-func (qm *QueueManager) Publish(queueName string, message *string) {
+func (qm *QueueManager) Publish(queueName string, message *message.Message) {
 	// log.Debugf("Publishing message to %s: %s", queueName, message)
 
 	queueToPublishTo := qm.getQueueSafely(queueName)
