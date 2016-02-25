@@ -1,6 +1,7 @@
 package gamq
 
 import (
+	"github.com/FireEater64/gamq/message"
 	"sync/atomic"
 	"time"
 
@@ -9,8 +10,8 @@ import (
 
 type Queue struct {
 	Name                   string
-	messageInput           chan *string
-	messageOutput          chan *string
+	messageInput           chan *message.Message
+	messageOutput          chan *message.Message
 	metrics                chan<- *Metric
 	closing                chan<- *string
 	subscribers            map[string]*MessageShipper
@@ -19,7 +20,7 @@ type Queue struct {
 }
 
 func (q *Queue) Initialize(metricsChannel chan<- *Metric, closingChannel chan<- *string) {
-	q.messageInput = make(chan *string)
+	q.messageInput = make(chan *message.Message)
 	q.subscribers = make(map[string]*MessageShipper)
 	q.metrics = metricsChannel
 	q.closing = closingChannel
@@ -48,7 +49,7 @@ func (q *Queue) Close() {
 	q.running = false
 }
 
-func (q *Queue) Publish(givenMessage *string) {
+func (q *Queue) Publish(givenMessage *message.Message) {
 	q.messageInput <- givenMessage
 	atomic.AddUint64(&q.messagesSentLastSecond, 1)
 }

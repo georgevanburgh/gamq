@@ -2,6 +2,7 @@ package gamq
 
 import (
 	"fmt"
+	"github.com/FireEater64/gamq/message"
 	log "github.com/cihub/seelog"
 )
 
@@ -31,6 +32,10 @@ func (m *MetricsManager) listenForMetrics() {
 		log.Debugf("Received metric: %s - %v", metric.Name, metric.Value)
 
 		stringToPublish := fmt.Sprintf("%s:%s", metric.Name, metric.Value)
-		m.queueManager.Publish(metricsQueueName, &stringToPublish)
+		messageHeaders := make(map[string]string)
+		messageBody := []byte(stringToPublish)
+
+		metricMessage := message.NewMessage(&messageHeaders, &messageBody)
+		m.queueManager.Publish(metricsQueueName, metricMessage)
 	}
 }

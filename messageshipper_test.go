@@ -3,6 +3,7 @@ package gamq
 import (
 	"bufio"
 	"bytes"
+	"github.com/FireEater64/gamq/message"
 	"testing"
 
 	"github.com/onsi/gomega"
@@ -13,7 +14,7 @@ func TestMessageShipper_SuccessfullyForwardsMessages(t *testing.T) {
 
 	underTest := MessageShipper{}
 
-	inputChannel := make(chan *string, 0)
+	inputChannel := make(chan *message.Message, 0)
 
 	writerBuffer := new(bytes.Buffer)
 	dummyWriter := bufio.NewWriter(writerBuffer)
@@ -22,10 +23,11 @@ func TestMessageShipper_SuccessfullyForwardsMessages(t *testing.T) {
 
 	underTest.Initialize(inputChannel, &dummyClient)
 
-	testMessage := "This is a test!"
-	inputChannel <- &testMessage
+	testMessagePayload := []byte("This is a test!")
+	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
+	inputChannel <- testMessage
 
-	gomega.Eventually(func() string {
-		return writerBuffer.String()
-	}).Should(gomega.Equal(testMessage))
+	gomega.Eventually(func() []byte {
+		return writerBuffer.Bytes()
+	}).Should(gomega.Equal(testMessagePayload))
 }

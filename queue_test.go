@@ -3,6 +3,7 @@ package gamq
 import (
 	"bufio"
 	"bytes"
+	"github.com/FireEater64/gamq/message"
 	"strings"
 	"testing"
 
@@ -19,7 +20,8 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	gomega.RegisterTestingT(t)
 
 	underTest := Queue{Name: TEST_QUEUE_NAME}
-	testMessage := "Testing!"
+	testMessagePayload := []byte("Testing!")
+	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
 
 	dummyMetricsPipe := make(chan<- *Metric)
 	dummyClosingPipe := make(chan<- *string)
@@ -34,10 +36,10 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	underTest.AddSubscriber(&dummyClient)
 
 	// Queue the message
-	underTest.Publish(&testMessage)
+	underTest.Publish(testMessage)
 
-	gomega.Eventually(func() string {
-		return writerBuffer.String()
+	gomega.Eventually(func() []byte {
+		return writerBuffer.Bytes()
 	}).Should(gomega.Equal(testMessage))
 }
 
@@ -90,7 +92,8 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 	gomega.RegisterTestingT(t)
 
 	underTest := Queue{Name: TEST_QUEUE_NAME}
-	testMessage := "Testing!"
+	testMessagePayload := []byte("Testing!")
+	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
 
 	dummyMetricsPipe := make(chan<- *Metric)
 	dummyClosingPipe := make(chan<- *string)
@@ -111,7 +114,7 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 	underTest.AddSubscriber(&dummyClient2)
 
 	// Queue the message
-	underTest.Publish(&testMessage)
+	underTest.Publish(testMessage)
 
 	// Bit of a hack - only one of the subscribers will get the message,
 	// and we don't know which one
@@ -136,7 +139,7 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 	}).Should(gomega.BeTrue())
 
 	// Now send a message - the remaining client should receive it without issue
-	underTest.Publish(&testMessage)
+	underTest.Publish(testMessage)
 
 	gomega.Eventually(func() string {
 		return writerBuffer2.String()
@@ -150,14 +153,15 @@ func TestQueue_xPendingMetrics_producesCorrectMetric(t *testing.T) {
 	numberOfMessagesToSend := 10
 
 	underTest := Queue{Name: TEST_QUEUE_NAME}
-	testMessage := "Testing!"
+	testMessagePayload := []byte("Testing!")
+	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
 
 	dummyMetricsPipe := make(chan *Metric)
 	dummyClosingPipe := make(chan *string)
 	underTest.Initialize(dummyMetricsPipe, dummyClosingPipe)
 
 	for i := 0; i < numberOfMessagesToSend; i++ {
-		underTest.Publish(&testMessage)
+		underTest.Publish(testMessage)
 	}
 
 	// Eventually, we should see `numberOfMessagesToSend` pending messages
