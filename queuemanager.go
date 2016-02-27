@@ -11,16 +11,20 @@ type QueueManager struct {
 	closeNotificationChannel chan *string
 }
 
-func (qm *QueueManager) Initialize() {
+func NewQueueManager() *QueueManager {
+	qm := QueueManager{}
+
 	qm.queues = make(map[string]*Queue)
 	qm.closeNotificationChannel = make(chan *string, 10)
 
-	metricsManager := MetricsManager{}
-	qm.metricsChannel = metricsManager.Initialize(qm)
+	metricsManager := NewMetricsManager(&qm)
+	qm.metricsChannel = metricsManager.metricsChannel
 
 	go qm.listenForClosingQueues()
 
 	log.Debug("Initialized QueueManager")
+
+	return &qm
 }
 
 func (qm *QueueManager) Publish(queueName string, message *message.Message) {

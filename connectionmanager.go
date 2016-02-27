@@ -26,7 +26,7 @@ const (
 
 type ConnectionManager struct {
 	wg      sync.WaitGroup
-	qm      QueueManager
+	qm      *QueueManager
 	rand    *rand.Rand
 	tcpLn   net.Listener
 	udpConn *net.UDPConn
@@ -40,8 +40,7 @@ func NewConnectionManager() *ConnectionManager {
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// TODO: Clean up QueueManager initialization
-	manager.qm = QueueManager{}
-	manager.qm.Initialize()
+	manager.qm = NewQueueManager()
 
 	// Open TCP socket
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port)) // TODO: Handle error

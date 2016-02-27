@@ -19,7 +19,9 @@ type MetricsManager struct {
 	queueManager   *QueueManager
 }
 
-func (m *MetricsManager) Initialize(givenQueueManager *QueueManager) chan<- *Metric {
+func NewMetricsManager(givenQueueManager *QueueManager) *MetricsManager {
+	m := MetricsManager{}
+
 	m.queueManager = givenQueueManager
 
 	m.metricsChannel = make(chan *Metric, 100)
@@ -37,7 +39,7 @@ func (m *MetricsManager) Initialize(givenQueueManager *QueueManager) chan<- *Met
 
 	go m.listenForMetrics()
 
-	return m.metricsChannel
+	return &m
 }
 
 func (m *MetricsManager) listenForMetrics() {
