@@ -25,11 +25,12 @@ const (
 )
 
 type ConnectionManager struct {
-	wg      sync.WaitGroup
-	qm      *queueManager
-	rand    *rand.Rand
-	tcpLn   net.Listener
-	udpConn *net.UDPConn
+	wg         sync.WaitGroup
+	qm         *queueManager
+	rand       *rand.Rand
+	tcpLn      net.Listener
+	udpConn    *net.UDPConn
+	tcpClients int64
 }
 
 func NewConnectionManager() *ConnectionManager {
@@ -100,6 +101,10 @@ func (manager *ConnectionManager) listenOnTcpConnection() {
 				err.Error())
 		}
 		log.Debug("A new TCP connection was opened.")
+
+		manager.tcpClients++
+		manager.updateClientMetric()
+
 		manager.wg.Add(1)
 		go manager.handleConnection(&conn)
 	}
@@ -134,6 +139,12 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 	}
 
 	log.Info("A connection was closed")
+	manager.tcpClients--
+	manager.updateClientMetric()
+}
+
+func (manager *ConnectionManager) updateClientMetric() {
+	manager.qm.metricsManager.metricsChannel <- NewMetric("clients.tcp", "guage", manager.tcpClients)
 }
 
 func (manager *ConnectionManager) parseClientCommand(commandLine string, client *Client) {

@@ -32,7 +32,7 @@ func NewMetricsManager(givenQueueManager *queueManager) *MetricsManager {
 		statsClient.CreateSocket()
 		interval := time.Second
 		m.statsBuffer = statsd.NewStatsdBuffer(interval, statsClient)
-		log.Debug("Initialized StatsD")
+		log.Debugf("Initialized StatsD - sending metrics to: %s", Configuration.StatsDEndpoint)
 	} else {
 		m.statsdEnabled = false
 	}

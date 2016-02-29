@@ -12,9 +12,10 @@ type messageShipper struct {
 	subscriber     *Client
 	ClientName     string
 	CloseChannel   chan bool
+	queueName      string
 }
 
-func newMessageShipper(inputChannel chan *message.Message, subscriber *Client, givenMetricsChannel chan<- *Metric) *messageShipper {
+func newMessageShipper(inputChannel chan *message.Message, subscriber *Client, givenMetricsChannel chan<- *Metric, queueName string) *messageShipper {
 	shipper := messageShipper{}
 
 	shipper.subscriber = subscriber
@@ -22,6 +23,7 @@ func newMessageShipper(inputChannel chan *message.Message, subscriber *Client, g
 	shipper.CloseChannel = make(chan bool)
 	shipper.ClientName = subscriber.Name
 	shipper.metricsChannel = givenMetricsChannel
+	shipper.queueName = queueName
 
 	go shipper.forwardMessageToClient()
 
@@ -39,10 +41,13 @@ func (shipper *messageShipper) forwardMessageToClient() {
 				}
 				shipper.subscriber.Writer.Flush()
 
-				// Calculate and log the latency for the sent message
-				shipper.metricsChannel <- NewMetric("latency", "timing", time.Now().Sub(message.ReceivedAt).Nanoseconds()/1000000)
-				// Log the number of bytes received
-				shipper.metricsChannel <- NewMetric("bytesout.tcp", "count", int64(len(*message.Body)))
+				// Bit of a hack - but stops an infinite loop
+				if shipper.queueName != metricsQueueName {
+					// Calculate and log the latency for the sent message
+					shipper.metricsChannel <- NewMetric("latency", "timing", time.Now().Sub(message.ReceivedAt).Nanoseconds()/1000000)
+					// Log the number of bytes received
+					shipper.metricsChannel <- NewMetric("bytesout.tcp", "count", int64(len(*message.Body)))
+				}
 
 			} else {
 				return

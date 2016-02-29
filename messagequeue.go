@@ -59,7 +59,7 @@ func (q *messageQueue) Publish(givenMessage *message.Message) {
 
 func (q *messageQueue) AddSubscriber(givenSubscriber *Client) {
 	go q.listenForDisconnectingSubscribers(givenSubscriber)
-	q.subscribers[givenSubscriber.Name] = newMessageShipper(q.messageOutput, givenSubscriber, q.metrics)
+	q.subscribers[givenSubscriber.Name] = newMessageShipper(q.messageOutput, givenSubscriber, q.metrics, q.Name)
 }
 
 func (q *messageQueue) listenForDisconnectingSubscribers(givenSubscriber *Client) {

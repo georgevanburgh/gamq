@@ -20,7 +20,7 @@ func TestMessageShipper_SuccessfullyForwardsMessages(t *testing.T) {
 	dummyClient := Client{Name: "Test", Writer: dummyWriter, Closed: &closedChannel}
 	dummyMetricsChannel := make(chan *Metric)
 
-	underTest := newMessageShipper(inputChannel, &dummyClient, dummyMetricsChannel)
+	underTest := newMessageShipper(inputChannel, &dummyClient, dummyMetricsChannel, "test")
 
 	testMessagePayload := []byte("This is a test!")
 	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
