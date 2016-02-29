@@ -78,6 +78,9 @@ func (manager *ConnectionManager) listenOnUdpConnection() {
 			panic(err.Error())
 		}
 
+		// Log the number of bytes received
+		manager.qm.metricsManager.metricsChannel <- NewMetric("bytesin.udp", "count", int64(length))
+
 		writer := udp.NewUDPWriter(manager.udpConn, remoteAddr)
 		bufferedWriter := bufio.NewWriter(writer)
 
@@ -115,6 +118,9 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 	for {
 		// Read until newline
 		line, err := client.Reader.ReadString('\n')
+
+		// Log the number of bytes received
+		manager.qm.metricsManager.metricsChannel <- NewMetric("bytesin.tcp", "count", int64(len(line)))
 
 		if err != nil {
 			// Connection has been closed
