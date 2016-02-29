@@ -16,10 +16,10 @@ type MetricsManager struct {
 	metricsChannel chan *Metric
 	statsBuffer    *statsd.StatsdBuffer
 	statsdEnabled  bool
-	queueManager   *QueueManager
+	queueManager   *queueManager
 }
 
-func NewMetricsManager(givenQueueManager *QueueManager) *MetricsManager {
+func NewMetricsManager(givenQueueManager *queueManager) *MetricsManager {
 	m := MetricsManager{}
 
 	m.queueManager = givenQueueManager
@@ -59,6 +59,8 @@ func (m *MetricsManager) listenForMetrics() {
 				m.statsBuffer.Incr(metric.Name, metric.Value)
 			case "guage":
 				m.statsBuffer.Gauge(metric.Name, metric.Value)
+			case "timing":
+				m.statsBuffer.Timing(metric.Name, metric.Value)
 			}
 		}
 

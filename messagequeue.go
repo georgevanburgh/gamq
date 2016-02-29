@@ -1,78 +1,108 @@
 package gamq
 
 import (
-	"sync"
+	"github.com/FireEater64/gamq/message"
 	"sync/atomic"
+	"time"
+
+	log "github.com/cihub/seelog"
 )
 
-type queuenode struct {
-	data *string
-	next *queuenode
+type messageQueue struct {
+	Name                   string
+	messageInput           chan *message.Message
+	messageOutput          chan *message.Message
+	metrics                chan<- *Metric
+	closing                chan<- *string
+	subscribers            map[string]*messageShipper
+	running                bool
+	messagesSentLastSecond uint64 // messagesSentLastSecond should never be > 0
 }
 
-// A goroutine safe FIFO, based on
-// https://github.com/hishboy/gocommons/blob/06389f1595e56cd7c27d9dc9fe48fc771db1b5ef/lang/queue.go
-type MessageQueue struct {
-	head  *queuenode
-	tail  *queuenode
-	count uint64
-	lock  *sync.Mutex
+func newMessageQueue(queueName string, metricsChannel chan<- *Metric, closingChannel chan<- *string) *messageQueue {
+	q := messageQueue{Name: queueName}
+	q.messageInput = make(chan *message.Message)
+	q.subscribers = make(map[string]*messageShipper)
+	q.metrics = metricsChannel
+	q.closing = closingChannel
+
+	messageHandler1 := DummyMessageHandler{}
+	messageHandler2 := DummyMessageHandler{}
+
+	// Hook the flow together
+	q.messageOutput = messageHandler2.Initialize(
+		messageHandler1.Initialize(q.messageInput))
+
+	// Launch the metrics handler and unsubscribed listener
+	go q.logMetrics()
+	q.running = true
+
+	return &q
 }
 
-func NewMessageQueue() *MessageQueue {
-	q := &MessageQueue{}
-	q.lock = &sync.Mutex{}
-	return q
-}
+func (q *messageQueue) Close() {
+	log.Debugf("Closing %s", q.Name)
 
-func (q *MessageQueue) Len() uint64 {
-	length := atomic.LoadUint64(&q.count)
-	return length
-}
-
-func (q *MessageQueue) Push(item *string) {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-
-	node := &queuenode{data: item}
-
-	if q.tail == nil {
-		q.tail = node
-		q.head = node
-	} else {
-		q.tail.next = node
-		q.tail = node
-	}
-	q.count++
-}
-
-func (q *MessageQueue) Poll() *string {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-
-	if q.head == nil {
-		return nil
+	// Close all subscribers
+	for _, subscriber := range q.subscribers {
+		q.closeSubscriber(subscriber.ClientName)
 	}
 
-	node := q.head
-	q.head = q.head.next
-
-	// If q is empty
-	if q.head == nil {
-		q.tail = nil
-	}
-	q.count--
-
-	return node.data
+	q.closing <- &q.Name
+	q.running = false
 }
 
-func (q *MessageQueue) Peek() *string {
-	q.lock.Lock()
-	defer q.lock.Unlock()
+func (q *messageQueue) Publish(givenMessage *message.Message) {
+	q.messageInput <- givenMessage
+	atomic.AddUint64(&q.messagesSentLastSecond, 1)
+}
 
-	if q.head == nil {
-		return nil
-	} else {
-		return q.head.data
+func (q *messageQueue) AddSubscriber(givenSubscriber *Client) {
+	go q.listenForDisconnectingSubscribers(givenSubscriber)
+	q.subscribers[givenSubscriber.Name] = newMessageShipper(q.messageOutput, givenSubscriber, q.metrics)
+}
+
+func (q *messageQueue) listenForDisconnectingSubscribers(givenSubscriber *Client) {
+	disconnectMessage := <-*givenSubscriber.Closed
+	if disconnectMessage {
+		q.closeSubscriber(givenSubscriber.Name)
+
+		// Close the queue if we have no more subscribers
+		// TODO: Should also check for pending messages/publishers
+		if len(q.subscribers) == 0 && len(q.messageOutput) == 0 {
+			log.Debugf("No subscribers left on queue %s - closing", q.Name)
+			q.Close()
+		}
+	}
+
+	// Other subscribers care about knowing the channel is closed
+	*givenSubscriber.Closed <- disconnectMessage
+}
+
+func (q *messageQueue) closeSubscriber(givenSubscriberName string) {
+	// Close the subscribers channel, and remove the subscriber from our array
+	log.Debugf("%s unsubscribed from %s", givenSubscriberName, q.Name)
+	q.subscribers[givenSubscriberName].CloseChannel <- true
+	delete(q.subscribers, givenSubscriberName)
+}
+
+func (q *messageQueue) logMetrics() {
+	for _ = range time.Tick(time.Second) {
+		// Die with the handler
+		if !q.running {
+			break
+		}
+
+		// If this is the metrics queue - don't log metrics
+		if q.Name == metricsQueueName {
+			break
+		}
+
+		// Send various metrics
+		currentMessageRate := atomic.SwapUint64(&q.messagesSentLastSecond, 0)
+
+		q.metrics <- &Metric{Name: q.Name + ".messagerate", Value: int64(currentMessageRate), Type: "counter"}
+		q.metrics <- &Metric{Name: q.Name + ".subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
+		q.metrics <- &Metric{Name: q.Name + ".pending", Value: int64(len(q.messageOutput)), Type: "guage"}
 	}
 }

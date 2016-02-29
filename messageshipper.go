@@ -3,25 +3,32 @@ package gamq
 import (
 	"github.com/FireEater64/gamq/message"
 	log "github.com/cihub/seelog"
+	"time"
 )
 
-type MessageShipper struct {
+type messageShipper struct {
 	messageChannel chan *message.Message
+	metricsChannel chan<- *Metric
 	subscriber     *Client
 	ClientName     string
 	CloseChannel   chan bool
 }
 
-func (shipper *MessageShipper) Initialize(inputChannel chan *message.Message, subscriber *Client) {
+func newMessageShipper(inputChannel chan *message.Message, subscriber *Client, givenMetricsChannel chan<- *Metric) *messageShipper {
+	shipper := messageShipper{}
+
 	shipper.subscriber = subscriber
 	shipper.messageChannel = inputChannel
 	shipper.CloseChannel = make(chan bool)
 	shipper.ClientName = subscriber.Name
+	shipper.metricsChannel = givenMetricsChannel
 
 	go shipper.forwardMessageToClient()
+
+	return &shipper
 }
 
-func (shipper *MessageShipper) forwardMessageToClient() {
+func (shipper *messageShipper) forwardMessageToClient() {
 	for {
 		select {
 		case message, more := <-shipper.messageChannel:
@@ -31,6 +38,7 @@ func (shipper *MessageShipper) forwardMessageToClient() {
 					log.Errorf("Error whilst sending message to consumer: %s", err)
 				}
 				shipper.subscriber.Writer.Flush()
+				shipper.metricsChannel <- NewMetric("latency", "timing", time.Now().Sub(message.ReceivedAt).Nanoseconds()/1000000)
 			} else {
 				return
 			}

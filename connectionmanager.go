@@ -26,7 +26,7 @@ const (
 
 type ConnectionManager struct {
 	wg      sync.WaitGroup
-	qm      *QueueManager
+	qm      *queueManager
 	rand    *rand.Rand
 	tcpLn   net.Listener
 	udpConn *net.UDPConn
@@ -40,7 +40,7 @@ func NewConnectionManager() *ConnectionManager {
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// TODO: Clean up QueueManager initialization
-	manager.qm = NewQueueManager()
+	manager.qm = newQueueManager()
 
 	// Open TCP socket
 	tcpAddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port)) // TODO: Handle error
@@ -145,9 +145,9 @@ func (manager *ConnectionManager) parseClientCommand(commandLine string, client 
 		manager.sendStringToClient(helpString, client)
 	case "PUB":
 		// TODO: Does this ever need to be a string?
+		// TODO: Handle headers
 		messageBody := []byte(strings.Join(commandTokens[2:], " "))
-		messageHeaders := make(map[string]string)
-		message := message.NewMessage(&messageHeaders, &messageBody)
+		message := message.NewHeaderlessMessage(&messageBody)
 		manager.qm.Publish(commandTokens[1], message)
 		// manager.sendStringToClient("PUBACK", client)
 	case "SUB":

@@ -12,20 +12,19 @@ import (
 func TestMessageShipper_SuccessfullyForwardsMessages(t *testing.T) {
 	gomega.RegisterTestingT(t)
 
-	underTest := MessageShipper{}
-
 	inputChannel := make(chan *message.Message, 0)
 
 	writerBuffer := new(bytes.Buffer)
 	dummyWriter := bufio.NewWriter(writerBuffer)
 	closedChannel := make(chan bool)
 	dummyClient := Client{Name: "Test", Writer: dummyWriter, Closed: &closedChannel}
+	dummyMetricsChannel := make(chan *Metric)
 
-	underTest.Initialize(inputChannel, &dummyClient)
+	underTest := newMessageShipper(inputChannel, &dummyClient, dummyMetricsChannel)
 
 	testMessagePayload := []byte("This is a test!")
 	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
-	inputChannel <- testMessage
+	underTest.messageChannel <- testMessage
 
 	gomega.Eventually(func() []byte {
 		return writerBuffer.Bytes()

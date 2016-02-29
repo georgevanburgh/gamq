@@ -2,7 +2,6 @@ package message
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 )
 
@@ -36,15 +35,11 @@ func TestNewHeaderlessMessage_CreatesSuccessfully(t *testing.T) {
 	}
 }
 
-func Benchmark(b *testing.B) {
-	var message *Message
-
+func BenchmarkMessageCreation(b *testing.B) {
 	dummyHeaders := make(map[string]string)
 	dummyBody := []byte("abc123")
 
 	for i := 0; i < b.N; i++ {
-		message = NewMessage(&dummyHeaders, &dummyBody)
+		_ = NewMessage(&dummyHeaders, &dummyBody)
 	}
-
-	fmt.Println(message)
 }

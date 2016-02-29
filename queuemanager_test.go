@@ -16,7 +16,7 @@ func TestQueueManager_queuesClosed_removedFromMap(t *testing.T) {
 	config := Config{}
 	SetConfig(&config)
 
-	underTest := NewQueueManager()
+	underTest := newQueueManager()
 
 	// Create dummy clients
 	dummyClient := Client{}
