@@ -4,7 +4,7 @@ import (
 	"github.com/FireEater64/gamq/message"
 )
 
-// Queue represents an in-memory queue, using a linked-list data structure, and
+// Queue represents an in-memory queue, using a slice-basedgit stat data structure, and
 // channel io
 type Queue struct {
 	Name          string
@@ -55,4 +55,8 @@ pump:
 	}
 
 	close(q.OutputChannel)
+}
+
+func (q *Queue) PendingMessages() int {
+	return len(q.list)
 }

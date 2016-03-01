@@ -2,6 +2,7 @@ package gamq
 
 import (
 	"github.com/FireEater64/gamq/message"
+	"github.com/FireEater64/gamq/queue"
 	"sync/atomic"
 	"time"
 
@@ -12,6 +13,7 @@ type messageQueue struct {
 	Name                   string
 	messageInput           chan *message.Message
 	messageOutput          chan *message.Message
+	queue                  *queue.Queue
 	metrics                chan<- *Metric
 	closing                chan<- *string
 	subscribers            map[string]*messageShipper
@@ -26,12 +28,7 @@ func newMessageQueue(queueName string, metricsChannel chan<- *Metric, closingCha
 	q.metrics = metricsChannel
 	q.closing = closingChannel
 
-	messageHandler1 := DummyMessageHandler{}
-	messageHandler2 := DummyMessageHandler{}
-
-	// Hook the flow together
-	q.messageOutput = messageHandler2.Initialize(
-		messageHandler1.Initialize(q.messageInput))
+	q.queue = queue.NewQueue(queueName)
 
 	// Launch the metrics handler and unsubscribed listener
 	go q.logMetrics()
@@ -53,13 +50,13 @@ func (q *messageQueue) Close() {
 }
 
 func (q *messageQueue) Publish(givenMessage *message.Message) {
-	q.messageInput <- givenMessage
+	q.queue.InputChannel <- givenMessage
 	atomic.AddUint64(&q.messagesSentLastSecond, 1)
 }
 
 func (q *messageQueue) AddSubscriber(givenSubscriber *Client) {
 	go q.listenForDisconnectingSubscribers(givenSubscriber)
-	q.subscribers[givenSubscriber.Name] = newMessageShipper(q.messageOutput, givenSubscriber, q.metrics, q.Name)
+	q.subscribers[givenSubscriber.Name] = newMessageShipper(q.queue.OutputChannel, givenSubscriber, q.metrics, q.Name)
 }
 
 func (q *messageQueue) listenForDisconnectingSubscribers(givenSubscriber *Client) {
@@ -103,6 +100,6 @@ func (q *messageQueue) logMetrics() {
 
 		q.metrics <- &Metric{Name: q.Name + ".messagerate", Value: int64(currentMessageRate), Type: "counter"}
 		q.metrics <- &Metric{Name: q.Name + ".subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
-		q.metrics <- &Metric{Name: q.Name + ".pending", Value: int64(len(q.messageOutput)), Type: "guage"}
+		q.metrics <- &Metric{Name: q.Name + ".pending", Value: int64(q.queue.PendingMessages()), Type: "guage"}
 	}
 }
