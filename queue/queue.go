@@ -10,7 +10,9 @@ type Queue struct {
 	Name          string
 	InputChannel  chan *message.Message
 	OutputChannel chan *message.Message
-	list          []*message.Message
+	head          *queueMessage
+	tail          *queueMessage
+	length        int
 }
 
 // NewQueue create a new queue, with given name
@@ -18,7 +20,6 @@ func NewQueue(givenName string) *Queue {
 	q := Queue{}
 	q.InputChannel = make(chan *message.Message)
 	q.OutputChannel = make(chan *message.Message)
-	q.list = []*message.Message{}
 
 	go q.pump()
 
@@ -30,33 +31,44 @@ func (q *Queue) pump() {
 pump:
 	for {
 		// If we have no messages - block until we receive one
-		if len(q.list) == 0 {
+		if q.head == nil {
 			newMessage, ok := <-q.InputChannel
+			newQueueMessage := newQueueMessage(newMessage)
 			if !ok {
 				break pump // Someone closed our input channel
 			}
-			q.list = append(q.list, newMessage)
+			q.head = newQueueMessage
+			q.tail = newQueueMessage
+			q.length++
 		}
 
 		select {
+
 		case newMessage, ok := <-q.InputChannel:
 			if !ok {
 				break pump // Someone closed our input channel - we're shutting down the pipeline
 			}
-			q.list = append(q.list, newMessage)
-		case q.OutputChannel <- q.list[0]:
-			q.list = q.list[1:]
+			newQueueMessage := newQueueMessage(newMessage)
+			q.tail.next = newQueueMessage
+			q.tail = newQueueMessage
+			q.length++
+
+		case q.OutputChannel <- q.head.data:
+			q.head = q.head.next
+			q.length--
 		}
 	}
 
 	// Finish sending remaining values
-	for _, value := range q.list {
-		q.OutputChannel <- value
+	nextMessageToSend := q.head
+	for nextMessageToSend != nil {
+		q.OutputChannel <- nextMessageToSend.data
+		nextMessageToSend = nextMessageToSend.next
 	}
 
 	close(q.OutputChannel)
 }
 
 func (q *Queue) PendingMessages() int {
-	return len(q.list)
+	return q.length
 }

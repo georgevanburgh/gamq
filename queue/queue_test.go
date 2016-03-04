@@ -45,6 +45,33 @@ func TestQueue_ReceiveBeforeSend_ReturnsExpectedResult(t *testing.T) {
 	}
 }
 
+func TestQueue_EvenNumberOfPushesAndPops_GivesZeroFinalLength(t *testing.T) {
+	underTest := NewQueue("Test")
+	numberOfRounds := 200
+
+	for i := 0; i < numberOfRounds; i++ {
+		dummyMessagePayLoad := []byte{byte(i)}
+		dummyMessage := message.NewHeaderlessMessage(&dummyMessagePayLoad)
+		underTest.InputChannel <- dummyMessage
+	}
+
+	gomega.Eventually(func() int {
+		return underTest.length
+	}).Should(gomega.Equal(numberOfRounds))
+
+	for i := 0; i < numberOfRounds; i++ {
+		message := <-underTest.OutputChannel
+		if int((*message.Body)[0]) != i {
+			t.Logf("Expected %d, got %d", i, int((*message.Body)[0]))
+			t.FailNow()
+		}
+	}
+
+	gomega.Eventually(func() int {
+		return underTest.length
+	}).Should(gomega.Equal(0))
+}
+
 func BenchmarkQueueSendRecv(b *testing.B) {
 	dummyMessagePayLoad := []byte("Test")
 	dummyMessage := message.NewHeaderlessMessage(&dummyMessagePayLoad)
