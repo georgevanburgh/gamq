@@ -41,7 +41,7 @@ pump:
 		select {
 		case newMessage, ok := <-q.InputChannel:
 			if !ok {
-				break pump // Queue is shutting down
+				break pump // Someone closed our input channel - we're shutting down the pipeline
 			}
 			q.list = append(q.list, newMessage)
 		case q.OutputChannel <- q.list[0]:
