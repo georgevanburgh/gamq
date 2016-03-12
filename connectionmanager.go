@@ -41,11 +41,15 @@ func NewConnectionManager() *ConnectionManager {
 	// A different seed will be used on each startup, for no good reason
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// TODO: Clean up QueueManager initialization
 	manager.qm = newQueueManager()
 
 	// Open TCP socket
-	tcpAddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port)) // TODO: Handle error
+	tcpAddr, tcpAddrErr := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port))
+
+	if tcpAddrErr != nil {
+		panic("Invalid port configured")
+	}
+
 	tcpListener, tcpErr := net.ListenTCP("tcp", tcpAddr)
 	manager.tcpLn = tcpListener
 
@@ -153,7 +157,6 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 			log.Debugf("%s closed connection", client.Name)
 
 			// Update the current tcpClients count
-			// TODO: Should be atomic
 			manager.tcpClients--
 			manager.updateClientMetric()
 
@@ -217,17 +220,24 @@ func (manager *ConnectionManager) parseClientCommand(commandTokens []string, mes
 	case "HELP":
 		manager.sendStringToClient(helpString, client)
 	case "PUB":
-		// TODO: Does this ever need to be a string?
 		// TODO: Handle headers
 		message := message.NewHeaderlessMessage(messageBody)
 		manager.qm.Publish(commandTokens[1], message)
-		// manager.sendStringToClient("PUBACK", client)
+		if client.AckRequested {
+			manager.sendStringToClient("PUBACK", client)
+		}
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)
 	case "DISCONNECT":
 		*client.Closed <- true
 	case "PINGREQ":
 		manager.sendStringToClient("PINGRESP", client)
+	case "SETACK":
+		if strings.ToUpper(commandTokens[1]) == "ON" {
+			client.AckRequested = true
+		} else {
+			client.AckRequested = false
+		}
 	case "CLOSE":
 		manager.qm.CloseQueue(commandTokens[1])
 	default:

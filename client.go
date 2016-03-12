@@ -5,10 +5,11 @@ import (
 )
 
 type Client struct {
-	Name   string
-	Writer *bufio.Writer
-	Reader *bufio.Reader
-	Closed *chan bool
+	Name         string
+	Writer       *bufio.Writer
+	Reader       *bufio.Reader
+	Closed       *chan bool
+	AckRequested bool
 }
 
 func NewClient(givenName string, givenWriter *bufio.Writer, givenReader *bufio.Reader) *Client {
