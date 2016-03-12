@@ -156,10 +156,6 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 			// Connection has been closed
 			log.Debugf("%s closed connection", client.Name)
 
-			// Update the current tcpClients count
-			manager.tcpClients--
-			manager.updateClientMetric()
-
 			*client.Closed <- true // TODO: This is blocking - shouldn't be
 			break
 		}
@@ -184,8 +180,6 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 				// TODO: Is this cross platform? Needs testing
 				if !bytes.Equal(line, []byte{'.', '\r', '\n'}) {
 					message = append(message, line...)
-					log.Debugf("Received %v", line)
-					log.Debugf("Message now reads %v", message)
 				} else {
 					log.Debug("End of message")
 					break
