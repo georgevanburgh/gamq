@@ -61,6 +61,8 @@ func (m *MetricsManager) listenForMetrics() {
 				m.statsBuffer.Gauge(metric.Name, metric.Value)
 			case "timing":
 				m.statsBuffer.Timing(metric.Name, metric.Value)
+			default:
+				log.Errorf("Unknown metric type received: %s", metric.Type)
 			}
 		}
 
