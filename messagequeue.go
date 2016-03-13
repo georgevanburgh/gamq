@@ -84,7 +84,7 @@ func (q *messageQueue) closeSubscriber(givenSubscriberName string) {
 }
 
 func (q *messageQueue) logMetrics() {
-	for _ = range time.Tick(time.Second) {
+	for range time.Tick(time.Second) {
 		// Die with the handler
 		if !q.running {
 			break
