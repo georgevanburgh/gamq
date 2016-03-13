@@ -23,10 +23,11 @@ func TestMessageShipper_SuccessfullyForwardsMessages(t *testing.T) {
 	underTest := newMessageShipper(inputChannel, &dummyClient, dummyMetricsChannel, "test")
 
 	testMessagePayload := []byte("This is a test!")
+	expectedMessagePayload := []byte("This is a test!\r\n.\r\n")
 	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
 	underTest.messageChannel <- testMessage
 
 	gomega.Eventually(func() []byte {
 		return writerBuffer.Bytes()
-	}).Should(gomega.Equal(testMessagePayload))
+	}).Should(gomega.Equal(expectedMessagePayload))
 }

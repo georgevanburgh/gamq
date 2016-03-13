@@ -17,7 +17,9 @@ func TestConnectionManager_parseClientCommand_helpMessageReturns(t *testing.T) {
 	bufWriter := bufio.NewWriter(buf)
 	mockClient := Client{Name: "Mock", Writer: bufWriter}
 
-	underTest.parseClientCommand("HELP", &mockClient)
+	var emptyMessage []byte
+
+	underTest.parseClientCommand([]string{"HELP"}, &emptyMessage, &mockClient)
 
 	if buf.String() == unrecognisedCommandText {
 		t.Fail()
@@ -31,7 +33,9 @@ func TestConnectionManager_parseClientCommand_isCaseInsensitive(t *testing.T) {
 	bufWriter := bufio.NewWriter(buf)
 	mockClient := Client{Name: "Mock", Writer: bufWriter}
 
-	underTest.parseClientCommand("help", &mockClient)
+	var emptyMessage []byte
+
+	underTest.parseClientCommand([]string{"help"}, &emptyMessage, &mockClient)
 
 	if buf.String() == unrecognisedCommandText {
 		t.Fail()
@@ -45,7 +49,9 @@ func TestConnectionManager_parseClientCommand_invalidCommandProcessedCorrectly(t
 	bufWriter := bufio.NewWriter(dummyWriterBuffer)
 	mockClient := Client{Name: "Mock", Writer: bufWriter}
 
-	underTest.parseClientCommand("fdkfjadkfh", &mockClient)
+	var emptyMessage []byte
+
+	underTest.parseClientCommand([]string{"fdkfjadkfh"}, &emptyMessage, &mockClient)
 
 	if dummyWriterBuffer.String() != unrecognisedCommandText+"\n" {
 		t.Fail()
@@ -55,9 +61,17 @@ func TestConnectionManager_parseClientCommand_invalidCommandProcessedCorrectly(t
 func TestConnectionManager_emptyClientCommand_handledGracefully(t *testing.T) {
 	underTest := ConnectionManager{}
 
-	mockClient := Client{}
+	dummyWriterBuffer := new(bytes.Buffer)
+	bufWriter := bufio.NewWriter(dummyWriterBuffer)
+	mockClient := Client{Name: "Mock", Writer: bufWriter}
 
-	underTest.parseClientCommand("", &mockClient)
+	var emptyMessage []byte
+
+	underTest.parseClientCommand([]string{""}, &emptyMessage, &mockClient)
+
+	if dummyWriterBuffer.String() != unrecognisedCommandText+"\n" {
+		t.Fail()
+	}
 }
 
 func TestConnectionManager_whenInitialized_acceptsConnectionsCorrectly(t *testing.T) {

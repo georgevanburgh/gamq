@@ -13,6 +13,7 @@ type messageShipper struct {
 	ClientName     string
 	CloseChannel   chan bool
 	queueName      string
+	endBytes       []byte
 }
 
 func newMessageShipper(inputChannel chan *message.Message, subscriber *Client, givenMetricsChannel chan<- *Metric, queueName string) *messageShipper {
@@ -24,6 +25,7 @@ func newMessageShipper(inputChannel chan *message.Message, subscriber *Client, g
 	shipper.ClientName = subscriber.Name
 	shipper.metricsChannel = givenMetricsChannel
 	shipper.queueName = queueName
+	shipper.endBytes = []byte{'\r', '\n', '.', '\r', '\n'}
 
 	go shipper.forwardMessageToClient()
 
@@ -35,10 +37,13 @@ func (shipper *messageShipper) forwardMessageToClient() {
 		select {
 		case message, more := <-shipper.messageChannel:
 			if more {
-				_, err := shipper.subscriber.Writer.WriteString(string(*message.Body))
+				_, err := shipper.subscriber.Writer.Write(*message.Body)
 				if err != nil {
 					log.Errorf("Error whilst sending message to consumer: %s", err)
 				}
+
+				// Write end runes
+				shipper.subscriber.Writer.Write(shipper.endBytes)
 				shipper.subscriber.Writer.Flush()
 
 				// Bit of a hack - but stops an infinite loop

@@ -2,6 +2,7 @@ package gamq
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/FireEater64/gamq/message"
 	"github.com/FireEater64/gamq/udp"
@@ -40,11 +41,15 @@ func NewConnectionManager() *ConnectionManager {
 	// A different seed will be used on each startup, for no good reason
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// TODO: Clean up QueueManager initialization
 	manager.qm = newQueueManager()
 
 	// Open TCP socket
-	tcpAddr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port)) // TODO: Handle error
+	tcpAddr, tcpAddrErr := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port))
+
+	if tcpAddrErr != nil {
+		panic("Invalid port configured")
+	}
+
 	tcpListener, tcpErr := net.ListenTCP("tcp", tcpAddr)
 	manager.tcpLn = tcpListener
 
@@ -86,7 +91,30 @@ func (manager *ConnectionManager) listenOnUdpConnection() {
 		bufferedWriter := bufio.NewWriter(writer)
 
 		client := NewClient(strconv.Itoa(manager.rand.Int()), bufferedWriter, nil)
-		manager.parseClientCommand(string(buffer[:length]), client)
+
+		// TODO: Parse message, and check if we're expecting a message
+		commandTokens := strings.Fields(string(buffer[:length]))
+		var message []byte
+		if commandTokens[0] == "pub" {
+			// Use bytes.Equal until Go1.7 (https://github.com/golang/go/issues/14302)
+			for {
+				var err error
+				length, _, err := manager.udpConn.ReadFromUDP(buffer[0:])
+
+				if err != nil {
+					return
+				}
+
+				// TODO: Is this cross platform? Needs testing
+				if !bytes.Equal(buffer[:length], []byte{'.', '\r', '\n'}) {
+					message = append(message, buffer[:length]...)
+				} else {
+					break
+				}
+			}
+		}
+
+		manager.parseClientCommand(commandTokens, &message, client)
 
 		log.Debugf("Read %d bytes from %s: %s", length, remoteAddr, string(buffer[:length]))
 	}
@@ -124,18 +152,46 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 		// Read until newline
 		line, err := client.Reader.ReadString('\n')
 
-		// Log the number of bytes received
-		manager.qm.metricsManager.metricsChannel <- NewMetric("bytesin.tcp", "counter", int64(len(line)))
-
 		if err != nil {
 			// Connection has been closed
 			log.Debugf("%s closed connection", client.Name)
-			*client.Closed <- true
+
+			*client.Closed <- true // TODO: This is blocking - shouldn't be
 			break
 		}
 
+		// Tokenise the command line
+		commandTokens := strings.Fields(string(line[:len(line)]))
+		var message []byte
+
+		if commandTokens[0] == "pub" {
+
+			var line []byte
+
+			// Use bytes.Equal until Go1.7 (https://github.com/golang/go/issues/14302)
+			for {
+				var err error
+				line, err = client.Reader.ReadBytes(byte('\n'))
+
+				if err != nil {
+					return
+				}
+
+				// TODO: Is this cross platform? Needs testing
+				if !bytes.Equal(line, []byte{'.', '\r', '\n'}) {
+					message = append(message, line...)
+				} else {
+					log.Debug("End of message")
+					break
+				}
+			}
+		}
+
 		// Parse command and (optionally) return response (if any)
-		manager.parseClientCommand(line, &client)
+		manager.parseClientCommand(commandTokens, &message, &client)
+
+		// Log the number of bytes received (command + body)
+		manager.qm.metricsManager.metricsChannel <- NewMetric("bytesin.tcp", "counter", int64(len(line)+len(message)))
 	}
 
 	log.Info("A connection was closed")
@@ -147,10 +203,7 @@ func (manager *ConnectionManager) updateClientMetric() {
 	manager.qm.metricsManager.metricsChannel <- NewMetric("clients.tcp", "guage", manager.tcpClients)
 }
 
-func (manager *ConnectionManager) parseClientCommand(commandLine string, client *Client) {
-
-	commandTokens := strings.Fields(string(commandLine[:len(commandLine)]))
-
+func (manager *ConnectionManager) parseClientCommand(commandTokens []string, messageBody *[]byte, client *Client) {
 	if len(commandTokens) == 0 {
 		return
 	}
@@ -161,18 +214,24 @@ func (manager *ConnectionManager) parseClientCommand(commandLine string, client 
 	case "HELP":
 		manager.sendStringToClient(helpString, client)
 	case "PUB":
-		// TODO: Does this ever need to be a string?
 		// TODO: Handle headers
-		messageBody := []byte(strings.Join(commandTokens[2:], " "))
-		message := message.NewHeaderlessMessage(&messageBody)
+		message := message.NewHeaderlessMessage(messageBody)
 		manager.qm.Publish(commandTokens[1], message)
-		// manager.sendStringToClient("PUBACK", client)
+		if client.AckRequested {
+			manager.sendStringToClient("PUBACK", client)
+		}
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)
 	case "DISCONNECT":
 		*client.Closed <- true
 	case "PINGREQ":
 		manager.sendStringToClient("PINGRESP", client)
+	case "SETACK":
+		if strings.ToUpper(commandTokens[1]) == "ON" {
+			client.AckRequested = true
+		} else {
+			client.AckRequested = false
+		}
 	case "CLOSE":
 		manager.qm.CloseQueue(commandTokens[1])
 	default:
