@@ -20,6 +20,7 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 	gomega.RegisterTestingT(t)
 
 	testMessagePayload := []byte("Testing!")
+	expectedMessagePayload := []byte("Testing!\r\n.\r\n")
 	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
 
 	dummyMetricsPipe := make(chan<- *Metric)
@@ -39,7 +40,7 @@ func TestQueue_sendMessage_messageReceivedSuccessfully(t *testing.T) {
 
 	gomega.Eventually(func() []byte {
 		return writerBuffer.Bytes()
-	}).Should(gomega.Equal(testMessagePayload))
+	}).Should(gomega.Equal(expectedMessagePayload))
 }
 
 func TestQueue_sendMessage_generatesMetrics(t *testing.T) {
@@ -90,6 +91,7 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 	gomega.RegisterTestingT(t)
 
 	testMessagePayload := []byte("Testing!")
+	expectedMessagePayload := []byte("Testing!\r\n.\r\n")
 	testMessage := message.NewHeaderlessMessage(&testMessagePayload)
 
 	dummyMetricsPipe := make(chan<- *Metric, 10)
@@ -122,7 +124,7 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 		} else {
 			return writerBuffer1.Bytes()
 		}
-	}).Should(gomega.Equal(testMessagePayload))
+	}).Should(gomega.Equal(expectedMessagePayload))
 
 	// We'll be reusing these buffers
 	writerBuffer1.Reset()
@@ -141,7 +143,7 @@ func TestQueue_sendMessageAfterUnsubscribe_messageReceivedSuccessfully(t *testin
 
 	gomega.Eventually(func() []byte {
 		return writerBuffer2.Bytes()
-	}).Should(gomega.Equal(testMessagePayload))
+	}).Should(gomega.Equal(expectedMessagePayload))
 
 }
 
