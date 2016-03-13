@@ -7,9 +7,10 @@ import socket
 import threading
 
 # Global variables
-HostAddress = ""
+HostAddress = "localhost"
 HostPort = 48879
 Protocol = ""
+AckMessages = False
 NumberOfMessages = 0
 
 # Helper function to check if a number is valid
@@ -32,11 +33,19 @@ def getSocket():
 
 def writeThread():
     s = getSocket()
+
+    if AckMessages:
+        s.sendall("setack on")
+
     startTime = time.clock()
     for i in range(0, int(NumberOfMessages), 1):
-        command = "pub abc {}\n".format(i)
-        print command,
-        s.sendall(command)
+        s.sendall("pub abc\n")
+        s.sendall("{}\n".format(i))
+        s.sendall(".\r\n")
+        if AckMessages:
+            response = s.recv(1024)
+            if response != "PUBACK\n":
+                print "Error whilst publishing {}".format(i)
     endTime = time.clock()
     s.close()
     print "Took {} seconds to write {} messages".format((endTime - startTime), NumberOfMessages)
@@ -46,10 +55,13 @@ def readThread():
     s = getSocket()
     startTime = time.clock()
     s.sendall("sub abc\n")
+
     for i in range(0, int(NumberOfMessages), 1):
-        response = s.recv(10)
-        print response
-        if int(response) != int(i):
+        response = ""
+        while response[-3:] != ".\r\n":
+            response += s.recv(1)
+        response = response.translate(None, ".\r\n")
+        if int() != int(i):
             print "Expected {}, got {}".format(i, response)
     endTime = time.clock()
     s.close()
@@ -76,6 +88,10 @@ def readConfig():
     else:
         NumberOfMessages = int(numberOfMessages)
 
+    ackMessages = raw_input("Ack messages (y/n): ")
+
+    AckMessages = (ackMessages == "y")
+
     hostAddress = raw_input("Host to connect to: ")
 
     if hostAddress == "":
@@ -94,9 +110,9 @@ def readConfig():
         exit(-1)
 
 readConfig()
-readThread = threading.Thread(target=readThread)
 writeThread = threading.Thread(target=writeThread)
-readThread.start()
+readThread = threading.Thread(target=readThread)
 writeThread.start()
-readThread.join()
+readThread.start()
 writeThread.join()
+readThread.join()
