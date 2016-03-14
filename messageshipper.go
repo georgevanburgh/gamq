@@ -51,7 +51,7 @@ func (shipper *messageShipper) forwardMessageToClient() {
 					// Calculate and log the latency for the sent message
 					shipper.metricsChannel <- NewMetric("latency", "timing", time.Now().Sub(message.ReceivedAt).Nanoseconds()/1000000)
 					// Log the number of bytes received
-					shipper.metricsChannel <- NewMetric("bytesout.tcp", "counter", int64(len(*message.Body)+len(shipper.endBytes)))
+					shipper.metricsChannel <- NewMetric("bytesout", "counter", int64(len(*message.Body)+len(shipper.endBytes)))
 				}
 
 			} else {

@@ -45,6 +45,9 @@ func (q *messageQueue) Close() {
 		q.closeSubscriber(subscriber.ClientName)
 	}
 
+	// Final metrics log
+	q.logMetrics()
+
 	q.closing <- &q.Name
 	q.running = false
 }

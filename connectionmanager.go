@@ -174,6 +174,11 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 
 		// Tokenise the command line
 		commandTokens := strings.Fields(string(line[:]))
+
+		if len(commandTokens) == 0 {
+			break
+		}
+
 		var message []byte
 
 		if commandTokens[0] == "pub" {
