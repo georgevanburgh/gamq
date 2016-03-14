@@ -22,20 +22,23 @@ def isNumber(givenObject):
         return False
 
 
-def getSocket():
-    if Protocol == "tcp":
+def getSocket(protocol):
+    if protocol == "tcp":
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # else:
-    #     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    elif protocol == "udp":
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    else:
+        print "Invalid protocol: {}".format(protocol)
+        exit(-1)
     s.connect((HostAddress, HostPort))
     return s
 
 
 def writeThread():
-    s = getSocket()
+    s = getSocket(Protocol)
 
     if AckMessages:
-        s.sendall("setack on")
+        s.sendall("setack on\n")
 
     startTime = time.clock()
     for i in range(0, int(NumberOfMessages), 1):
@@ -43,16 +46,16 @@ def writeThread():
         s.sendall("{}\n".format(i))
         s.sendall(".\r\n")
         if AckMessages:
-            response = s.recv(1024)
-            if response != "PUBACK\n":
-                print "Error whilst publishing {}".format(i)
+            response = s.recv(8)
+            if response[:6] != "PUBACK":
+                print "Error whilst publishing {}, got response: {}".format(i, response)
     endTime = time.clock()
     s.close()
     print "Took {} seconds to write {} messages".format((endTime - startTime), NumberOfMessages)
 
 
 def readThread():
-    s = getSocket()
+    s = getSocket("tcp")
     startTime = time.clock()
     s.sendall("sub abc\n")
 
@@ -69,7 +72,7 @@ def readThread():
 
 
 def readConfig():
-    global NumberOfMessages, HostAddress, HostPort, Protocol
+    global AckMessages, NumberOfMessages, HostAddress, HostPort, Protocol
 
     # Get benchmark parameters
     protocol = raw_input("Protocol to use (tcp/udp): ")
@@ -112,7 +115,10 @@ def readConfig():
 readConfig()
 writeThread = threading.Thread(target=writeThread)
 readThread = threading.Thread(target=readThread)
+readThread.daemon = True
+writeThread.daemon = True
 writeThread.start()
 readThread.start()
-writeThread.join()
-readThread.join()
+
+while threading.active_count() > 1:
+    time.sleep(1)

@@ -31,6 +31,7 @@ type ConnectionManager struct {
 	rand       *rand.Rand
 	tcpLn      net.Listener
 	udpConn    *net.UDPConn
+	udpClients map[string]*Client
 	tcpClients int64
 }
 
@@ -42,6 +43,8 @@ func NewConnectionManager() *ConnectionManager {
 	manager.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	manager.qm = newQueueManager()
+
+	manager.udpClients = make(map[string]*Client)
 
 	// Open TCP socket
 	tcpAddr, tcpAddrErr := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", Configuration.Port))
@@ -84,13 +87,22 @@ func (manager *ConnectionManager) listenOnUdpConnection() {
 			panic(err.Error())
 		}
 
+		// Check if we've seen UDP packets from this address before - if so, reuse
+		// existing client object
+		client, ok := manager.udpClients[remoteAddr.String()]
+		if !ok {
+			log.Debug("New UDP client")
+			writer := udp.NewUDPWriter(manager.udpConn, remoteAddr)
+			bufferedWriter := bufio.NewWriter(writer)
+
+			client = NewClient(strconv.Itoa(manager.rand.Int()), bufferedWriter, nil)
+			manager.udpClients[remoteAddr.String()] = client
+		} else {
+			log.Debug("Found UDP client!")
+		}
+
 		// Log the number of bytes received
 		manager.qm.metricsManager.metricsChannel <- NewMetric("bytesin.udp", "counter", int64(length))
-
-		writer := udp.NewUDPWriter(manager.udpConn, remoteAddr)
-		bufferedWriter := bufio.NewWriter(writer)
-
-		client := NewClient(strconv.Itoa(manager.rand.Int()), bufferedWriter, nil)
 
 		// TODO: Parse message, and check if we're expecting a message
 		commandTokens := strings.Fields(string(buffer[:length]))
@@ -218,7 +230,7 @@ func (manager *ConnectionManager) parseClientCommand(commandTokens []string, mes
 		message := message.NewHeaderlessMessage(messageBody)
 		manager.qm.Publish(commandTokens[1], message)
 		if client.AckRequested {
-			manager.sendStringToClient("PUBACK", client)
+			manager.sendStringToClient("PUBACK\n", client)
 		}
 	case "SUB":
 		manager.qm.Subscribe(commandTokens[1], client)
