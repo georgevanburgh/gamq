@@ -1,6 +1,6 @@
 import socket, os
 import tempfile
-from PIL import Image
+import subprocess
 
 # Global variables
 HostAddress = "localhost"
@@ -25,7 +25,7 @@ def getSocket():
     return s
 
 def readConfig():
-    global ImagePath, HostAddress, HostPort, Protocol
+    global HostAddress, HostPort, Protocol
 
     # Get benchmark parameters
     protocol = raw_input("Protocol to use (tcp/udp): ")
@@ -35,14 +35,6 @@ def readConfig():
         exit(-1)
     else:
         Protocol = protocol
-
-    imagePath = raw_input("Path of image to send: ")
-
-    if not os.path.isfile(imagePath):
-        print "Invalid path"
-        exit(-1)
-    else:
-        ImagePath = imagePath
 
     hostAddress = raw_input("Host to connect to: ")
 
@@ -79,14 +71,16 @@ def displayImage(imageData):
     tempFile = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
     tempFile.write(imageData)
     tempFile.close()
-    dt = Image.open(tempFile.name)
-    dt.show()
-    return dt
+    viewer = subprocess.Popen(['display', tempFile.name])
+    return viewer
 
 
-# readConfig()
+readConfig()
 displayedImage = ""
+openImage = False
 while True:
     imageData = readImage()
-    del displayedImage
-    displayedImage = displayImage(imageData)
+    if openImage:
+        openImage.terminate()
+        openImage.kill()
+    openImage = displayImage(imageData)

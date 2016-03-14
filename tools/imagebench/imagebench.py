@@ -77,6 +77,6 @@ def sendImageToBroker(givenImageData):
     s.sendall("\r\n")
     s.sendall(".\r\n")
 
-# readConfig()
+readConfig()
 imageData = readImageData(ImagePath)
 sendImageToBroker(imageData)
