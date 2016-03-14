@@ -1,9 +1,10 @@
-import socket, os
+import subprocess, socket, os
 # Global variables
 HostAddress = "localhost"
 HostPort = 48879
 Protocol = "tcp"
 ImagePath = ""
+UseWebcam = False
 
 # Helper function to check if a number is valid
 def isNumber(givenObject):
@@ -23,7 +24,7 @@ def getSocket():
     return s
 
 def readConfig():
-    global ImagePath, HostAddress, HostPort, Protocol
+    global ImagePath, HostAddress, HostPort, Protocol, UseWebcam
 
     # Get benchmark parameters
     protocol = raw_input("Protocol to use (tcp/udp): ")
@@ -34,13 +35,17 @@ def readConfig():
     else:
         Protocol = protocol
 
-    imagePath = raw_input("Path of image to send: ")
+    useWebcam = raw_input("Use webcam? (y/n): ")
+    UseWebcam = (useWebcam == "y")
 
-    if not os.path.isfile(imagePath):
-        print "Invalid path"
-        exit(-1)
-    else:
-        ImagePath = imagePath
+    if not UseWebcam:
+        imagePath = raw_input("Path of image to send: ")
+
+        if not os.path.isfile(imagePath):
+            print "Invalid path"
+            exit(-1)
+        else:
+            ImagePath = imagePath
 
     hostAddress = raw_input("Host to connect to: ")
 
@@ -58,6 +63,12 @@ def readConfig():
     else:
         print "Invalid number"
         exit(-1)
+
+def readImageFromWebcam():
+    subprocess.call(['imagesnap', '-w', str(1), '-q', '/tmp/photo.jpg'])
+    imageData = readImageData('/tmp/photo.jpg')
+    os.remove('/tmp/photo.jpg')
+    return imageData
 
 def readImageData(givenImagePath):
     try:
@@ -78,5 +89,10 @@ def sendImageToBroker(givenImageData):
     s.sendall(".\r\n")
 
 readConfig()
-imageData = readImageData(ImagePath)
-sendImageToBroker(imageData)
+if UseWebcam:
+    while True:
+        imageData = readImageFromWebcam()
+        sendImageToBroker(imageData)
+else:
+    imageData = readImageData(ImagePath)
+    sendImageToBroker(imageData)
