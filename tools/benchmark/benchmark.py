@@ -50,8 +50,9 @@ def writeThread():
             if response[:6] != "PUBACK":
                 print "Error whilst publishing {}, got response: {}".format(i, response)
     endTime = time.clock()
-    s.close()
     print "Took {} seconds to write {} messages".format((endTime - startTime), NumberOfMessages)
+    time.sleep(2)
+    s.close()
 
 
 def readThread():
@@ -67,8 +68,9 @@ def readThread():
         if int() != int(i):
             print "Expected {}, got {}".format(i, response)
     endTime = time.clock()
-    s.close()
     print "Took {} seconds to read {} messages".format((endTime - startTime), NumberOfMessages)
+    time.sleep(2)
+    s.close()
 
 
 def readConfig():

@@ -161,6 +161,7 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 		Reader: connReader,
 		Closed: &closedChannel}
 
+readLoop:
 	for {
 		// Read until newline
 		line, err := client.Reader.ReadString('\n')
@@ -169,8 +170,11 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 			// Connection has been closed
 			log.Debugf("%s closed connection", client.Name)
 
-			*client.Closed <- true // TODO: This is blocking - shouldn't be
-			break
+			if client.hasSubscriptions {
+				*client.Closed <- true
+			}
+
+			break readLoop
 		}
 
 		// Tokenise the command line
@@ -218,6 +222,7 @@ func (manager *ConnectionManager) handleConnection(conn *net.Conn) {
 }
 
 func (manager *ConnectionManager) updateClientMetric() {
+	log.Debug("Updating guages")
 	manager.qm.metricsManager.metricsChannel <- NewMetric("clients.tcp", "guage", manager.tcpClients)
 }
 
@@ -239,6 +244,7 @@ func (manager *ConnectionManager) parseClientCommand(commandTokens []string, mes
 			manager.sendStringToClient("PUBACK\n", client)
 		}
 	case "SUB":
+		client.hasSubscriptions = true
 		manager.qm.Subscribe(commandTokens[1], client)
 	case "DISCONNECT":
 		*client.Closed <- true
