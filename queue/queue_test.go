@@ -58,35 +58,6 @@ func TestQueue_CloseQueueImmediately_ThrowsNoErrors(t *testing.T) {
 	}).Should(gomega.BeFalse())
 }
 
-func TestQueue_CloseChannelBeforeConsuming_GivesZeroFinalLength(t *testing.T) {
-	underTest := NewQueue("Test")
-	numberOfRounds := 10
-
-	for i := 0; i < numberOfRounds; i++ {
-		dummyMessagePayLoad := []byte{byte(i)}
-		dummyMessage := message.NewHeaderlessMessage(&dummyMessagePayLoad)
-		underTest.InputChannel <- dummyMessage
-	}
-
-	gomega.Eventually(func() int {
-		return underTest.length
-	}).Should(gomega.Equal(numberOfRounds))
-
-	close(underTest.InputChannel)
-
-	for i := 0; i < numberOfRounds; i++ {
-		message := <-underTest.OutputChannel
-		if int((*message.Body)[0]) != i {
-			t.Logf("Expected %d, got %d", i, int((*message.Body)[0]))
-			t.FailNow()
-		}
-	}
-
-	gomega.Eventually(func() int {
-		return underTest.PendingMessages()
-	}).Should(gomega.Equal(0))
-}
-
 func TestQueue_EvenNumberOfPushesAndPops_GivesZeroFinalLength(t *testing.T) {
 	underTest := NewQueue("Test")
 	numberOfRounds := 200
