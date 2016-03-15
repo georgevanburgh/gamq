@@ -12,14 +12,22 @@ matrix:
   - go: tip
 
 before_install:
-  - go get github.com/axw/gocov/gocov
-  - go get github.com/mattn/goveralls
   - go get golang.org/x/tools/cmd/cover
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/modocache/gover
+  - go get github.com/mattn/goveralls
 before_script:
   - go get -d ./...
 script:
   - go test -v ./... -bench=.
-  - if ! $HOME/gopath/bin/goveralls -service=travis-ci -repotoken $COVERALLS_TOKEN; then echo "Coveralls not available."; fi
+
+  - go test -coverprofile=message.coverprofile ./message
+  - go test -coverprofile=queue.coverprofile ./queue
+  - go test -coverprofile=udp.coverprofile ./udp
+  - go test -coverprofile=main.coverprofile
+  - $HOME/gopath/bin/gover
+  - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service travis-ci
+
   - go build main/gamq.go
 
 deploy:
