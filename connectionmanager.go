@@ -4,15 +4,16 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/FireEater64/gamq/message"
-	"github.com/FireEater64/gamq/udp"
-	log "github.com/cihub/seelog"
 	"math/rand"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/FireEater64/gamq/message"
+	"github.com/FireEater64/gamq/udp"
+	log "github.com/cihub/seelog"
 )
 
 const (
