@@ -1,10 +1,11 @@
 package gamq
 
 import (
-	"github.com/FireEater64/gamq/message"
-	"github.com/FireEater64/gamq/queue"
 	"sync/atomic"
 	"time"
+
+	"github.com/FireEater64/gamq/message"
+	"github.com/FireEater64/gamq/queue"
 
 	log "github.com/cihub/seelog"
 )
