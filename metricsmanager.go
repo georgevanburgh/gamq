@@ -66,7 +66,7 @@ func (m *MetricsManager) listenForMetrics() {
 			}
 		}
 
-		stringToPublish := fmt.Sprintf("%s:%s", metric.Name, metric.Value)
+		stringToPublish := fmt.Sprintf("%s:%d", metric.Name, metric.Value)
 		messageHeaders := make(map[string]string)
 		messageBody := []byte(stringToPublish)
 
