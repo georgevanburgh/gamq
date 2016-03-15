@@ -46,7 +46,7 @@ func (q *messageQueue) Close() {
 	}
 
 	// Final metrics log
-	q.logMetrics()
+	q.doLogGuages()
 
 	q.closing <- &q.Name
 	q.running = false
@@ -102,7 +102,11 @@ func (q *messageQueue) logMetrics() {
 		currentMessageRate := atomic.SwapUint64(&q.messagesSentLastSecond, 0)
 
 		q.metrics <- &Metric{Name: q.Name + ".messagerate", Value: int64(currentMessageRate), Type: "counter"}
-		q.metrics <- &Metric{Name: q.Name + ".subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
-		q.metrics <- &Metric{Name: q.Name + ".pending", Value: int64(q.queue.PendingMessages()), Type: "guage"}
+
 	}
+}
+
+func (q *messageQueue) doLogGuages() {
+	q.metrics <- &Metric{Name: q.Name + ".subscribers", Value: int64(len(q.subscribers)), Type: "guage"}
+	q.metrics <- &Metric{Name: q.Name + ".pending", Value: int64(q.queue.PendingMessages()), Type: "guage"}
 }
