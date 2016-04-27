@@ -23,7 +23,9 @@ const (
 	HELP: Prints this text
 	PUB <queue> <message>: Publish <message> to <queue>
 	SUB <queue>: Subscribe to messages on <queue>
-	PINGREQ: Requests a PINGRESP from the server`
+	PINGREQ: Requests a PINGRESP from the server
+	DISCONNECT: Disconnect from the server
+	SETACK <on/off>: Enable/Disable message acknowledgement`
 )
 
 type ConnectionManager struct {
